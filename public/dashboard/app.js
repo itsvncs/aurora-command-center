@@ -42,16 +42,91 @@ const state = {
   },
 };
 
-// ---------- HA bridge (placeholder) ----------
-const HA = {
-  // const conn = new WebSocket(`wss://homeassistant.local:8123/api/websocket`);
-  // auth: process.env.HA_TOKEN
-  callService(domain, service, data) {
-    console.log("[HA] callService", domain, service, data);
-    // return fetch("/api/services/" + domain + "/" + service, {method:"POST", body: JSON.stringify(data)})
+// ---------- HA bridge (integração com Home Assistant) ----------
+// Configure aqui a URL e o token de longa duração do seu HA.
+// Tokens devem ser gerados em: Home Assistant → Perfil → Tokens de acesso de longa duração.
+const HA_CONFIG = {
+  baseUrl: window.HA_BASE_URL || "",        // ex.: "https://homeassistant.local:8123"
+  token:   window.HA_TOKEN    || "",        // ex.: "eyJ0eXAiOiJK..."
+  wsUrl:   window.HA_WS_URL   || "",        // ex.: "wss://homeassistant.local:8123/api/websocket"
+  cameras: {
+    // mapeie aqui os entity_id das câmeras para uso no dashboard
+    berco:    "camera.berco_2",
+    entrada:  "camera.entrada",
+    sala:     "camera.sala",
+    garagem:  "camera.garagem",
   },
-  subscribe(entity, cb) { /* WS subscribe_events */ },
-  getState(entity) { /* GET /api/states/{entity} */ },
+};
+
+const HA = {
+  config: HA_CONFIG,
+
+  // Leitura de estado: GET /api/states/{entity_id}
+  async getState(entity) {
+    if (!HA_CONFIG.baseUrl || !HA_CONFIG.token) return null;
+    try {
+      const r = await fetch(`${HA_CONFIG.baseUrl}/api/states/${entity}`, {
+        headers: { Authorization: `Bearer ${HA_CONFIG.token}` },
+      });
+      return r.ok ? r.json() : null;
+    } catch (e) { console.warn("[HA] getState fail", e); return null; }
+  },
+
+  // Chamada de serviço: POST /api/services/{domain}/{service}
+  async callService(domain, service, data = {}) {
+    console.log("[HA] callService", domain, service, data);
+    if (!HA_CONFIG.baseUrl || !HA_CONFIG.token) return;
+    try {
+      await fetch(`${HA_CONFIG.baseUrl}/api/services/${domain}/${service}`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${HA_CONFIG.token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+    } catch (e) { console.warn("[HA] callService fail", e); }
+  },
+
+  // Subscribe a eventos via WebSocket (state_changed)
+  // Use HA.subscribe("light.sala_teto", state => { ... })
+  _ws: null, _subs: new Map(), _id: 1,
+  subscribe(entity, cb) {
+    if (!HA_CONFIG.wsUrl || !HA_CONFIG.token) return;
+    if (!this._ws) this._connectWS();
+    this._subs.set(entity, cb);
+  },
+  _connectWS() {
+    try {
+      const ws = new WebSocket(HA_CONFIG.wsUrl);
+      this._ws = ws;
+      ws.onmessage = (msg) => {
+        const data = JSON.parse(msg.data);
+        if (data.type === "auth_required") {
+          ws.send(JSON.stringify({ type: "auth", access_token: HA_CONFIG.token }));
+        } else if (data.type === "auth_ok") {
+          ws.send(JSON.stringify({ id: this._id++, type: "subscribe_events", event_type: "state_changed" }));
+        } else if (data.type === "event" && data.event?.event_type === "state_changed") {
+          const ent = data.event.data.entity_id;
+          const cb = this._subs.get(ent);
+          if (cb) cb(data.event.data.new_state);
+        }
+      };
+      ws.onclose = () => { this._ws = null; setTimeout(() => this._connectWS(), 3000); };
+    } catch (e) { console.warn("[HA] WS fail", e); }
+  },
+
+  // URL de stream MJPEG / snapshot de câmera
+  cameraStream(entity) {
+    return HA_CONFIG.baseUrl
+      ? `${HA_CONFIG.baseUrl}/api/camera_proxy_stream/${entity}?token=${HA_CONFIG.token}`
+      : "";
+  },
+  cameraSnapshot(entity) {
+    return HA_CONFIG.baseUrl
+      ? `${HA_CONFIG.baseUrl}/api/camera_proxy/${entity}?token=${HA_CONFIG.token}`
+      : "";
+  },
 };
 
 // ---------- Util ----------
