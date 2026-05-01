@@ -100,9 +100,16 @@
    RESET / BASE
    ========================================================= */
 *,*::before,*::after { box-sizing: border-box; }
-html, body { height: 100%; }
-body {
+html, body {
+  height: 100%;
+  width: 100%;
   margin: 0;
+  padding: 0;
+  /* fullscreen kiosk: evita qualquer container externo afetar o layout */
+  min-width: 100vw;
+  min-height: 100vh;
+}
+body {
   font-family: var(--f-sans);
   font-size: var(--t-14);
   color: var(--c-ink);
@@ -111,6 +118,9 @@ body {
   -moz-osx-font-smoothing: grayscale;
   overflow: hidden;
   letter-spacing: -0.01em;
+  /* impede zoom acidental por gestos no tablet */
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
 }
 button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
 input { font: inherit; color: inherit; }
