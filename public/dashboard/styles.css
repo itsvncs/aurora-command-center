@@ -804,13 +804,25 @@ img, svg { display: block; max-width: 100%; }
 /* =========================================================
    RESPONSIVO GERAL
    ========================================================= */
-@media (max-width: 1280px) {
+/* Tablet horizontal (≈1024–1366) — mantém layout largo, sem verticalizar */
+@media (max-width: 1366px) and (min-width: 901px) and (orientation: landscape) {
+  .home-grid { grid-template-columns: 1.8fr 1fr 1fr; }
+  .climate-grid { grid-template-columns: 1.4fr 1fr 1fr; }
+  .media-grid { grid-template-columns: 1.3fr 1fr 1fr; }
+  .sec-grid { grid-template-columns: 2fr 1fr; }
+  .baby__row1 { grid-template-columns: repeat(5, 1fr); }
+  .view { padding: 22px 24px 24px; }
+}
+
+@media (max-width: 1280px) and (orientation: portrait) {
   .home-grid { grid-template-columns: 1.6fr 1fr 1fr; }
   .climate-grid { grid-template-columns: 1fr 1fr; }
   .media-grid { grid-template-columns: 1fr 1fr; }
   .sec-grid { grid-template-columns: 1fr; }
 }
-@media (max-width: 980px) {
+
+/* Telas realmente pequenas (não-tablet) */
+@media (max-width: 900px) {
   :root { --sidebar-w: 72px; --topbar-h: 76px; }
   .topbar { grid-template-columns: 1fr auto; padding: 14px 18px; }
   .topbar__center { display: none; }
