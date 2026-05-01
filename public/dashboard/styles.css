@@ -171,7 +171,12 @@ img, svg { display: block; max-width: 100%; }
 .app {
   display: grid;
   grid-template-columns: var(--sidebar-w) 1fr;
+  width: 100vw;
   height: 100vh;
+  /* fallback dvh para barras de UI em iOS/PWA */
+  height: 100dvh;
+  min-width: 0;
+  overflow: hidden;
 }
 
 /* SIDEBAR */
