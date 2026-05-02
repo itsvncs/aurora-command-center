@@ -129,6 +129,8 @@ const state = {
   ws: null,
   cameraTimers: new Map(),
   cameraUrls: new Map(),
+  activeSecurityCamera: null,
+  securityRotateTimer: null,
 };
 
 const $ = (s, el = document) => el.querySelector(s);
