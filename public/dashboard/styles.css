@@ -809,7 +809,7 @@ img, svg { display: block; max-width: 100%; }
   background: #06080a;
   border: 1px solid var(--c-line-strong);
   box-shadow: var(--shadow-lg);
-  min-height: 360px;
+  min-height: 460px;
 }
 .baby__cam .feed {
   position: absolute; inset: 0;
