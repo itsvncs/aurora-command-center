@@ -401,7 +401,7 @@ function renderMedia() {
 }
 
 function toggleRow(id, name, subtitle) {
-  return `<div class="toggle-row ${isOn(id) ? "is-on" : ""}" data-entity="${id}"><div><div class="nm">${name}</div><div class="sb">${subtitle}</div></div><button class="switch ${isOn(id) ? "is-on" : ""}" data-toggle="${id}"><span></span></button></div>`;
+  return `<div class="toggle-row ${isOn(id) ? "is-on" : ""}" data-entity="${id}"><div><div class="nm">${name}</div><div class="sb">${subtitle}</div></div>${lightBtn(id)}</div>`;
 }
 
 function renderBaby() {
