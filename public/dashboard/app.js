@@ -1524,3 +1524,12 @@ connectWebSocket = function () {
 
 /* primeiro paint de FAB e auto-tema após bootstrap */
 setTimeout(() => { updateFab(); autoTheme(); }, 800);
+
+/* =========================================================
+   SERVICE WORKER
+   ========================================================= */
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/dashboard/sw.js").catch(() => {});
+  });
+}
