@@ -386,7 +386,24 @@ function renderClimate() {
 }
 
 function renderSecurity() {
-  return `${sectionHead("Segurança", "Porta principal e alarme")}<div class="home-grid" style="grid-template-columns:2fr 1fr 1fr;"><article class="card hero" style="min-height:260px;"><div class="hero__feed"><img class="hero__feed-img" data-camera-feed="${ENTITY_MAP.baby.camera}" alt="Sinal da câmera" /></div><div class="hero__overlay"><div class="hero__top"><span class="chip chip--live"><span class="dot"></span> Monitoramento</span></div><div class="hero__bottom"><div><h3 class="hero__title">Porta principal</h3><div class="hero__meta">${formatState(ENTITY_MAP.security.door)}</div></div></div></div></article><article class="card stat-card"><div class="label">Alarme</div><div class="value">${formatState(ENTITY_MAP.security.alarm)}</div></article><article class="card stat-card"><div class="label">Porta</div><div class="value">${formatState(ENTITY_MAP.security.door)}</div></article></div>`;
+  const cams = HOME_CAMERAS;
+  const cur = state.activeSecurityCamera || cams[0].id;
+  state.activeSecurityCamera = cur;
+  const curLabel = (cams.find((c) => c.id === cur) || cams[0]).label;
+  return `${sectionHead("Segurança", "Câmeras, porta principal e alarme")}<div class="home-grid" style="grid-template-columns:2fr 1fr 1fr;">
+    <article class="card hero" style="min-height:380px;grid-row:span 2;" data-camera-fullscreen="${cur}" data-security-hero>
+      <div class="hero__feed"><img class="hero__feed-img" data-camera-feed="${cur}" data-camera-slot="security" alt="Sinal da câmera" /></div>
+      <div class="hero__overlay">
+        <div class="hero__top">
+          <div class="hero__tabs" data-security-camera-tabs>${cams.map((c) => `<button class="${c.id === cur ? "is-active" : ""}" data-security-camera="${c.id}">${c.label}</button>`).join("")}</div>
+          <span class="chip chip--live"><span class="dot"></span> Auto · 10s</span>
+        </div>
+        <div class="hero__bottom"><div><h3 class="hero__title" data-security-cam-label>${curLabel}</h3><div class="hero__meta">Arraste para trocar · toque para abrir</div></div></div>
+      </div>
+    </article>
+    <article class="card stat-card" data-entity="${ENTITY_MAP.security.alarm}"><div class="label">Alarme</div><div class="value">${formatState(ENTITY_MAP.security.alarm)}</div></article>
+    <article class="card stat-card"><div class="label">Porta</div><div class="value">${formatState(ENTITY_MAP.security.door)}</div></article>
+  </div>`;
 }
 
 function mediaCard(id, label) {
