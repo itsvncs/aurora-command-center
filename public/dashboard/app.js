@@ -432,6 +432,7 @@ function patchEntityUI(id) {
   const current = isOn(id);
   const pct = brightnessPct(id);
   document.querySelectorAll(`[data-toggle="${id}"]`).forEach((el) => el.classList.toggle("is-on", current));
+  document.querySelectorAll(`.lightbtn[data-toggle="${id}"]`).forEach((el) => el.classList.toggle("is-on", current));
   document.querySelectorAll(`[data-entity="${id}"]`).forEach((el) => {
     el.classList.toggle("is-on", current);
     if (el.classList.contains("room-card")) {
