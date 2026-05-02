@@ -1577,3 +1577,353 @@ if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("/dashboard/sw.js").catch(() => {});
   });
 }
+
+/* =========================================================
+   GROUP MODAL (long-press num grupo)
+   ========================================================= */
+function openGroupModal(groupId) {
+  const groupKey = Object.entries(ENTITY_MAP.groups).find(([k, v]) => v === groupId)?.[0];
+  const items = groupKey ? ENTITY_MAP.lights[groupKey] || [] : [];
+  const all = [{ id: groupId, name: friendly(groupId, groupId), subtitle: "Grupo" }, ...items.filter((i) => i.id !== groupId)];
+  openModal(`
+    <div class="modal__head">
+      <div>
+        <h2 class="modal__title">${friendly(groupId, groupId)}</h2>
+        <div class="modal__sub">Controle individual do grupo</div>
+      </div>
+      <button class="modal__close" data-modal-close aria-label="Fechar">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="group-list">
+      ${all.map((it) => `
+        <div class="toggle-row ${isOn(it.id) ? "is-on" : ""}" data-entity="${it.id}">
+          <div><div class="nm">${friendly(it.id, it.name)}</div><div class="sb">${it.subtitle || ""}</div></div>
+          ${lightBtn(it.id)}
+        </div>
+      `).join("")}
+    </div>
+  `);
+  sheetEl.querySelectorAll("[data-toggle]").forEach((btn) => {
+    btn.onclick = async (e) => {
+      e.stopPropagation();
+      await toggleEntity(btn.dataset.toggle);
+    };
+  });
+}
+
+/* =========================================================
+   HOUSE MODES + SECURITY SWIPE + FULLSCREEN CAMERA
+   ========================================================= */
+// Bind hooks após cada render
+const _origBindInteractions = bindInteractions;
+bindInteractions = function () {
+  _origBindInteractions();
+
+  // Modos da casa
+  document.querySelectorAll("[data-house-mode]").forEach((btn) => {
+    btn.onclick = async (e) => {
+      e.stopPropagation();
+      const opt = btn.dataset.houseMode;
+      document.querySelectorAll("[data-house-mode]").forEach((b) => b.classList.toggle("is-active", b === btn));
+      try {
+        await callService("input_select", "select_option", { option: opt }, { entity_id: ENTITY_MAP.houseMode });
+        setEntityState(ENTITY_MAP.houseMode, opt);
+        updateHomeCameraMeta();
+      } catch (err) { console.error(err); }
+    };
+  });
+
+  // Tabs câmera de segurança
+  document.querySelectorAll("[data-security-camera]").forEach((btn) => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      switchSecurityCamera(btn.dataset.securityCamera);
+      restartSecurityRotate();
+    };
+  });
+
+  // Swipe na hero da home
+  const homeHero = document.querySelector(".hero[data-camera-fullscreen]");
+  if (homeHero && state.route === "home") attachSwipe(homeHero, (dir) => {
+    const ids = HOME_CAMERAS.map((c) => c.id);
+    const i = ids.indexOf(state.activeHomeCamera);
+    const nextIdx = (i + (dir === "left" ? 1 : -1) + ids.length) % ids.length;
+    switchHomeCamera(ids[nextIdx]);
+  });
+
+  // Swipe no hero de segurança
+  const secHero = document.querySelector("[data-security-hero]");
+  if (secHero && state.route === "security") {
+    attachSwipe(secHero, (dir) => {
+      const ids = HOME_CAMERAS.map((c) => c.id);
+      const i = ids.indexOf(state.activeSecurityCamera);
+      const nextIdx = (i + (dir === "left" ? 1 : -1) + ids.length) % ids.length;
+      switchSecurityCamera(ids[nextIdx]);
+      restartSecurityRotate();
+    });
+    startSecurityRotate();
+  } else {
+    stopSecurityRotate();
+  }
+
+  // Click em hero (que NÃO seja num botão interno) -> fullscreen
+  document.querySelectorAll("[data-camera-fullscreen]").forEach((el) => {
+    el.addEventListener("click", (e) => {
+      if (e.target.closest("button, [data-toggle], [data-home-camera], [data-security-camera]")) return;
+      if (el.dataset._swiped === "1") { el.dataset._swiped = "0"; return; }
+      openCameraFs(el.dataset.cameraFullscreen);
+    });
+  });
+};
+
+function attachSwipe(el, onSwipe) {
+  let sx = 0, sy = 0, t0 = 0, active = false;
+  el.addEventListener("pointerdown", (e) => {
+    if (e.target.closest("button")) return;
+    sx = e.clientX; sy = e.clientY; t0 = Date.now(); active = true;
+  });
+  el.addEventListener("pointerup", (e) => {
+    if (!active) return; active = false;
+    const dx = e.clientX - sx, dy = e.clientY - sy;
+    if (Date.now() - t0 < 600 && Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.4) {
+      el.dataset._swiped = "1";
+      onSwipe(dx < 0 ? "left" : "right");
+    }
+  });
+  el.addEventListener("pointercancel", () => { active = false; });
+}
+
+function switchSecurityCamera(nextId) {
+  if (!nextId || nextId === state.activeSecurityCamera) return;
+  state.activeSecurityCamera = nextId;
+  const img = document.querySelector("[data-camera-slot='security']");
+  const label = document.querySelector("[data-security-cam-label]");
+  document.querySelectorAll("[data-security-camera]").forEach((b) => b.classList.toggle("is-active", b.dataset.securityCamera === nextId));
+  const heroFs = document.querySelector("[data-security-hero]");
+  if (heroFs) heroFs.dataset.cameraFullscreen = nextId;
+  if (label) label.textContent = (HOME_CAMERAS.find((c) => c.id === nextId) || {}).label || "";
+  if (img) {
+    img.classList.add("is-slide-out-left");
+    setTimeout(async () => {
+      img.dataset.cameraFeed = nextId;
+      await refreshCameraFeed(img);
+      bindCameraFeed(img);
+      img.classList.remove("is-slide-out-left");
+    }, 180);
+  }
+}
+
+function startSecurityRotate() {
+  stopSecurityRotate();
+  state.securityRotateTimer = setInterval(() => {
+    if (state.route !== "security") return stopSecurityRotate();
+    const ids = HOME_CAMERAS.map((c) => c.id);
+    const i = ids.indexOf(state.activeSecurityCamera);
+    switchSecurityCamera(ids[(i + 1) % ids.length]);
+  }, 10000);
+}
+function stopSecurityRotate() {
+  if (state.securityRotateTimer) clearInterval(state.securityRotateTimer);
+  state.securityRotateTimer = null;
+}
+function restartSecurityRotate() {
+  if (state.route === "security") startSecurityRotate();
+}
+
+/* =========================================================
+   CÂMERA FULLSCREEN
+   ========================================================= */
+const camFs = document.createElement("div");
+camFs.className = "camfs";
+camFs.innerHTML = `
+  <button class="camfs__close" aria-label="Fechar">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+  </button>
+  <div class="camfs__bar"></div>
+  <img class="camfs__img" alt="Câmera fullscreen" />
+  <div class="camfs__hint">Arraste para trocar · toque para fechar</div>
+`;
+document.body.appendChild(camFs);
+const camFsImg = camFs.querySelector(".camfs__img");
+const camFsBar = camFs.querySelector(".camfs__bar");
+let camFsTimer = null;
+let camFsCurrent = null;
+const ALL_CAMS = [...HOME_CAMERAS, { id: ENTITY_MAP.baby.camera, label: "Berço" }];
+
+function paintCamFsBar() {
+  camFsBar.innerHTML = ALL_CAMS.map((c) => `<button data-camfs="${c.id}" class="${c.id === camFsCurrent ? "is-active" : ""}">${c.label}</button>`).join("");
+  camFsBar.querySelectorAll("[data-camfs]").forEach((b) => {
+    b.onclick = (e) => { e.stopPropagation(); switchCamFs(b.dataset.camfs); };
+  });
+}
+async function refreshCamFs() {
+  if (!camFsCurrent) return;
+  try {
+    const url = await fetchCameraFrame(camFsCurrent);
+    if (url) camFsImg.src = url;
+  } catch {}
+}
+function switchCamFs(id, dir = "left") {
+  if (!id || id === camFsCurrent) return;
+  camFsCurrent = id;
+  camFsImg.classList.add(dir === "left" ? "is-slide-out-left" : "is-slide-out-right");
+  paintCamFsBar();
+  setTimeout(async () => {
+    await refreshCamFs();
+    camFsImg.classList.remove("is-slide-out-left", "is-slide-out-right");
+  }, 180);
+}
+function openCameraFs(id) {
+  camFsCurrent = id;
+  paintCamFsBar();
+  camFs.classList.add("is-on");
+  refreshCamFs();
+  clearInterval(camFsTimer);
+  camFsTimer = setInterval(refreshCamFs, 1500);
+  haptic(10);
+}
+function closeCameraFs() {
+  camFs.classList.remove("is-on");
+  clearInterval(camFsTimer);
+  camFsTimer = null;
+  camFsCurrent = null;
+}
+camFs.querySelector(".camfs__close").addEventListener("click", (e) => { e.stopPropagation(); closeCameraFs(); });
+camFs.addEventListener("click", (e) => {
+  if (e.target.closest("button, .camfs__bar")) return;
+  closeCameraFs();
+});
+attachSwipe(camFs, (dir) => {
+  const ids = ALL_CAMS.map((c) => c.id);
+  const i = ids.indexOf(camFsCurrent);
+  const next = ids[(i + (dir === "left" ? 1 : -1) + ids.length) % ids.length];
+  switchCamFs(next, dir);
+});
+
+/* =========================================================
+   SCREENSAVER — bloquear na página baby
+   ========================================================= */
+const _origReset = resetSsTimer;
+resetSsTimer = function () {
+  clearTimeout(ssTimer);
+  if (state.route === "baby") return;
+  ssTimer = setTimeout(showScreensaver, SS_TIMEOUT);
+};
+// Quando entra na baby: garante off
+const _origGo = go;
+go = function (route) {
+  _origGo(route);
+  if (state.route === "baby") {
+    clearTimeout(ssTimer);
+    hideScreensaver();
+  } else {
+    resetSsTimer();
+  }
+  stopSecurityRotate();
+};
+
+/* =========================================================
+   SIDEBAR — avatar com iniciais coloridas + engrenagem (settings)
+   ========================================================= */
+(function setupSidebar() {
+  const avatar = document.querySelector(".avatar");
+  if (avatar) {
+    const photo = localStorage.getItem("auroraUserPhoto");
+    if (photo) {
+      avatar.innerHTML = `<img src="${photo}" alt="Usuário" />`;
+    }
+    avatar.style.cursor = "pointer";
+    avatar.title = "Trocar foto do usuário";
+    avatar.addEventListener("click", () => {
+      const input = document.createElement("input");
+      input.type = "file"; input.accept = "image/*";
+      input.onchange = () => {
+        const f = input.files?.[0]; if (!f) return;
+        const r = new FileReader();
+        r.onload = () => {
+          localStorage.setItem("auroraUserPhoto", r.result);
+          avatar.innerHTML = `<img src="${r.result}" alt="Usuário" />`;
+        };
+        r.readAsDataURL(f);
+      };
+      input.click();
+    });
+  }
+  const gear = document.querySelector(".sidebar__foot .nav-item");
+  if (gear) {
+    gear.addEventListener("click", openSettingsModal);
+  }
+})();
+
+function openSettingsModal() {
+  const photo = localStorage.getItem("auroraUserPhoto");
+  openModal(`
+    <div class="modal__head">
+      <div>
+        <h2 class="modal__title">Ajustes</h2>
+        <div class="modal__sub">Preferências da dashboard</div>
+      </div>
+      <button class="modal__close" data-modal-close aria-label="Fechar">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="modal__section">
+      <div class="modal__label">Tema</div>
+      <div class="temp-row">
+        <button class="temp-pill" data-set-theme="normal"><span class="swatch" style="background:#1a1d22"></span><span>Normal</span></button>
+        <button class="temp-pill" data-set-theme="dark"><span class="swatch" style="background:#000"></span><span>Escuro</span></button>
+        <button class="temp-pill" data-set-theme="night"><span class="swatch" style="background:#ff5a3a"></span><span>Noturno</span></button>
+      </div>
+    </div>
+    <div class="modal__section">
+      <div class="modal__label">Token Home Assistant</div>
+      <input id="settingsToken" type="password" placeholder="Long-Lived Access Token" style="width:100%;padding:12px 14px;border-radius:14px;border:1px solid var(--glass-stroke);background:var(--glass-2);color:inherit;outline:none;" />
+      <div style="display:flex;gap:10px;margin-top:10px;">
+        <button class="btn btn--lime" id="saveTokenSet">Salvar token</button>
+        <button class="btn" id="clearTokenSet">Limpar</button>
+      </div>
+    </div>
+    <div class="modal__section">
+      <div class="modal__label">Foto do usuário</div>
+      <div style="display:flex;gap:10px;align-items:center;">
+        ${photo ? `<img src="${photo}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;" />` : `<div class="avatar" style="position:relative;">W</div>`}
+        <button class="btn" id="changePhotoBtn">Trocar foto</button>
+        ${photo ? `<button class="btn" id="removePhotoBtn">Remover</button>` : ""}
+      </div>
+    </div>
+    <div class="modal__section">
+      <div class="modal__label">Recarregar dashboard</div>
+      <button class="btn" id="reloadDashBtn">Recarregar agora</button>
+    </div>
+  `);
+  sheetEl.querySelectorAll("[data-set-theme]").forEach((b) => {
+    b.onclick = () => { applyTheme(b.dataset.setTheme); };
+  });
+  sheetEl.querySelector("#saveTokenSet")?.addEventListener("click", () => {
+    const v = sheetEl.querySelector("#settingsToken").value.trim();
+    if (!v) return;
+    localStorage.setItem("auroraHaToken", v);
+    bootstrap();
+    closeModal();
+  });
+  sheetEl.querySelector("#clearTokenSet")?.addEventListener("click", () => {
+    localStorage.removeItem("auroraHaToken");
+    state.token = null;
+    closeModal();
+    bootstrap();
+  });
+  sheetEl.querySelector("#changePhotoBtn")?.addEventListener("click", () => {
+    document.querySelector(".avatar")?.click();
+    closeModal();
+  });
+  sheetEl.querySelector("#removePhotoBtn")?.addEventListener("click", () => {
+    localStorage.removeItem("auroraUserPhoto");
+    const av = document.querySelector(".avatar");
+    if (av) av.innerHTML = "W";
+    closeModal();
+  });
+  sheetEl.querySelector("#reloadDashBtn")?.addEventListener("click", () => location.reload());
+}
+
+/* Re-exclui o card popup da entidade alarme da segurança (quando há confirm) */
