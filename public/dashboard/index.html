@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./styles.css?v=20260502c" />
 </head>
 <body>
   <!-- Background atmosférico -->
@@ -93,8 +93,10 @@
             <span class="dot"></span>
           </button>
           <div class="weather-chip">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 18a4 4 0 0 0 0-8 6 6 0 0 0-11.7 1.5A4.5 4.5 0 0 0 6.5 20H17z"/></svg>
-            <span><strong id="wxTemp">24°</strong> · São Paulo</span>
+            <span id="wxIcon" class="weather-chip__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 18a4 4 0 0 0 0-8 6 6 0 0 0-11.7 1.5A4.5 4.5 0 0 0 6.5 20H17z"/></svg>
+            </span>
+            <span><strong id="wxTemp">24°</strong> · <span id="wxLocation">Taubaté</span></span>
           </div>
         </div>
       </header>
@@ -107,6 +109,11 @@
   <!-- Templates -->
   <template id="tpl-home"></template>
 
-  <script src="./app.js" type="module"></script>
+  <script src="./app.js?v=20260502c" type="module"></script>
 </body>
 </html>
+
+
+
+
+
