@@ -1506,18 +1506,28 @@ editBanner.textContent = "Concluir edição";
 editBanner.onclick = disableEdit;
 document.body.appendChild(editBanner);
 
-// long-press no card da home para entrar em edição
+// long-press (600ms) em card de grupo da home -> abre popup com entidades
 let lpTimer = null;
+let lpFired = false;
 view.addEventListener("pointerdown", (e) => {
   if (state.route !== "home") return;
-  if (document.body.classList.contains("is-editing")) return;
-  if (!e.target.closest(".home-grid > *")) return;
-  if (e.target.closest("[data-toggle], button, [data-home-camera]")) return;
-  lpTimer = setTimeout(enableEdit, 600);
+  const card = e.target.closest(".room-card[data-group-key]");
+  if (!card) return;
+  if (e.target.closest("[data-toggle], button")) return;
+  lpFired = false;
+  lpTimer = setTimeout(() => {
+    lpFired = true;
+    haptic(20);
+    openGroupModal(card.dataset.groupKey);
+  }, 600);
 });
-["pointerup", "pointermove", "pointercancel"].forEach((ev) =>
+["pointerup", "pointermove", "pointercancel", "pointerleave"].forEach((ev) =>
   view.addEventListener(ev, () => { clearTimeout(lpTimer); })
 );
+// se long-press disparou, suprime click subsequente
+document.addEventListener("click", (e) => {
+  if (lpFired) { e.stopPropagation(); e.preventDefault(); lpFired = false; }
+}, true);
 
 /* =========================================================
    HOOKS — render() extras + haptics nos toggles
