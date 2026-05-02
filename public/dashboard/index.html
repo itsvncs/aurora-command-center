@@ -88,12 +88,12 @@
           <button class="icon-btn" id="themeBtn" title="Modo (claro / escuro / noturno)" data-theme-mode="normal">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
           </button>
-          <button class="icon-btn" title="Cenas">
+          <button class="icon-btn" id="scenesBtn" title="Cenas">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 2.4 5 5.6.8-4 4 1 5.6L12 14.8 6.9 17.4l1-5.6-4-4 5.6-.8L12 2z"/></svg>
           </button>
-          <button class="icon-btn" title="Notificações">
+          <button class="icon-btn" id="notifBtn" title="Notificações">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21a2 2 0 0 0 4 0"/></svg>
-            <span class="dot"></span>
+            <span class="dot" id="notifDot" hidden></span>
           </button>
           <div class="weather-chip">
             <span id="wxIcon" class="weather-chip__icon" aria-hidden="true">
@@ -116,6 +116,23 @@
   <div class="modal" id="modal" aria-hidden="true">
     <div class="modal__backdrop" data-modal-close></div>
     <div class="modal__sheet" role="dialog" aria-modal="true" id="modalSheet"></div>
+  </div>
+
+  <!-- FAB Babytracker -->
+  <button class="fab" id="fabBaby" title="Ir para Babytracker" aria-label="Babytracker">
+    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="4"/><path d="M5 21c1-4 5-6 7-6s6 2 7 6"/></svg>
+    <span class="fab__pulse" id="fabPulse" hidden></span>
+  </button>
+
+  <!-- Screensaver -->
+  <div class="screensaver" id="screensaver" aria-hidden="true">
+    <div class="ss__time" id="ssTime">--:--</div>
+    <div class="ss__date" id="ssDate"></div>
+    <div class="ss__row">
+      <div class="ss__chip"><span id="ssTemp">--°</span> casa</div>
+      <div class="ss__chip" id="ssBaby">Berço livre</div>
+    </div>
+    <div class="ss__hint">toque para acordar</div>
   </div>
 
   <script src="./app.js?v=20260502d" type="module"></script>
