@@ -741,3 +741,299 @@ document.addEventListener("pointerup", () => {
   state.route = ROUTES.includes(route) ? route : "home";
   await bootstrap();
 })();
+
+/* =========================================================
+   THEME (normal -> dark -> night)
+   ========================================================= */
+const THEMES = ["normal", "dark", "night"];
+function applyTheme(name) {
+  document.body.dataset.theme = name;
+  localStorage.setItem("auroraTheme", name);
+  const btn = document.getElementById("themeBtn");
+  if (btn) {
+    btn.dataset.themeMode = name;
+    btn.title = name === "normal"
+      ? "Modo claro (atual) — clique para escuro"
+      : name === "dark"
+      ? "Modo escuro (atual) — clique para noturno"
+      : "Modo noturno (atual) — clique para voltar";
+  }
+}
+function cycleTheme() {
+  const cur = document.body.dataset.theme || "normal";
+  const next = THEMES[(THEMES.indexOf(cur) + 1) % THEMES.length];
+  applyTheme(next);
+}
+document.getElementById("themeBtn")?.addEventListener("click", cycleTheme);
+applyTheme(localStorage.getItem("auroraTheme") || "normal");
+
+/* =========================================================
+   MODAL — universal popup
+   ========================================================= */
+const modalEl = document.getElementById("modal");
+const sheetEl = document.getElementById("modalSheet");
+
+function openModal(html) {
+  if (!modalEl || !sheetEl) return;
+  sheetEl.innerHTML = html;
+  modalEl.classList.add("is-open");
+  modalEl.setAttribute("aria-hidden", "false");
+  bindModalInteractions();
+}
+function closeModal() {
+  if (!modalEl) return;
+  modalEl.classList.remove("is-open");
+  modalEl.setAttribute("aria-hidden", "true");
+  sheetEl.innerHTML = "";
+}
+modalEl?.addEventListener("click", (e) => {
+  if (e.target.matches("[data-modal-close]") || e.target === modalEl) closeModal();
+});
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); });
+
+const COLOR_SWATCHES = [
+  { name: "Quente",   rgb: [255, 180, 107] },
+  { name: "Branco",   rgb: [255, 244, 229] },
+  { name: "Frio",     rgb: [200, 220, 255] },
+  { name: "Âmbar",    rgb: [255, 160,  60] },
+  { name: "Vermelho", rgb: [255,  70,  70] },
+  { name: "Rosa",     rgb: [255, 105, 180] },
+  { name: "Roxo",     rgb: [170, 100, 255] },
+  { name: "Azul",     rgb: [ 80, 140, 255] },
+  { name: "Ciano",    rgb: [ 80, 220, 230] },
+  { name: "Verde",    rgb: [110, 230, 130] },
+  { name: "Lime",     rgb: [214, 255,  77] },
+  { name: "Amarelo",  rgb: [255, 230,  90] },
+];
+const COLOR_TEMPS = [
+  { name: "2200K", k: 2200, hex: "#ffb46b" },
+  { name: "2700K", k: 2700, hex: "#ffd29a" },
+  { name: "4000K", k: 4000, hex: "#fff4e5" },
+  { name: "6500K", k: 6500, hex: "#dfe8ff" },
+];
+
+function supportsBrightness(id) {
+  const e = entity(id);
+  return id.startsWith("light.") && (e?.attributes?.supported_color_modes?.length || e?.attributes?.brightness != null || true);
+}
+function supportsColor(id) {
+  const e = entity(id);
+  const modes = e?.attributes?.supported_color_modes || [];
+  return id.startsWith("light.") && modes.some((m) => ["hs", "rgb", "rgbw", "rgbww", "xy"].includes(m));
+}
+function supportsColorTemp(id) {
+  const e = entity(id);
+  const modes = e?.attributes?.supported_color_modes || [];
+  return id.startsWith("light.") && (modes.includes("color_temp") || modes.length === 0);
+}
+
+function openLightModal(id) {
+  const on = isOn(id);
+  const pct = brightnessPct(id) ?? (on ? 80 : 0);
+  const isLight = id.startsWith("light.");
+  const showColor = isLight && supportsColor(id);
+  const showTemp  = isLight && supportsColorTemp(id);
+  const showBright= isLight && supportsBrightness(id);
+
+  const colorBlock = showColor ? `
+    <div class="modal__section">
+      <div class="modal__label">Cor <b>RGB</b></div>
+      <div class="color-grid" data-color-grid>
+        ${COLOR_SWATCHES.map((c) => `
+          <button class="color-swatch" data-rgb="${c.rgb.join(',')}"
+            style="background:rgb(${c.rgb.join(',')})" title="${c.name}"></button>
+        `).join("")}
+      </div>
+    </div>` : "";
+
+  const tempBlock = showTemp ? `
+    <div class="modal__section">
+      <div class="modal__label">Temperatura de cor</div>
+      <div class="temp-row">
+        ${COLOR_TEMPS.map((t) => `
+          <button class="temp-pill" data-kelvin="${t.k}">
+            <span class="swatch" style="background:${t.hex}"></span>
+            <span>${t.name}</span>
+          </button>
+        `).join("")}
+      </div>
+    </div>` : "";
+
+  const brightBlock = showBright ? `
+    <div class="modal__section">
+      <div class="modal__label">Intensidade <b id="brightVal">${pct}%</b></div>
+      <input type="range" min="1" max="100" value="${pct}" class="bright-slider" id="brightSlider" />
+    </div>` : "";
+
+  openModal(`
+    <div class="modal__head">
+      <div>
+        <h2 class="modal__title">${friendly(id, id)}</h2>
+        <div class="modal__sub">${formatState(id)} · ${id}</div>
+      </div>
+      <button class="modal__close" data-modal-close aria-label="Fechar">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="modal-switch">
+      <span class="lbl">${on ? "Ligado" : "Desligado"}</span>
+      <button class="switch ${on ? "is-on" : ""}" data-modal-toggle="${id}"><span></span></button>
+    </div>
+    ${brightBlock}
+    ${colorBlock}
+    ${tempBlock}
+  `);
+}
+
+function openMediaModal(id) {
+  const e = entity(id);
+  const playing = entityState(id) === "playing";
+  const title = e?.attributes?.media_title || friendly(id, id);
+  const artist = e?.attributes?.media_artist || e?.attributes?.app_name || formatState(id);
+  const cover = e?.attributes?.entity_picture;
+  const vol = Math.round((e?.attributes?.volume_level ?? 0.4) * 100);
+  const initials = friendly(id, id).split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
+
+  openModal(`
+    <div class="modal__head">
+      <div>
+        <h2 class="modal__title">${friendly(id, id)}</h2>
+        <div class="modal__sub">${formatState(id)}</div>
+      </div>
+      <button class="modal__close" data-modal-close aria-label="Fechar">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="mp-cover">${cover ? `<img src="${cover}" alt="" />` : initials}</div>
+    <div class="mp-meta">
+      <div class="t">${title}</div>
+      <div class="a">${artist}</div>
+    </div>
+    <div class="mp-controls">
+      <button class="mp-btn" data-mp-prev="${id}" title="Anterior">⏮</button>
+      <button class="mp-btn mp-pp" data-mp-pp="${id}" title="Play/Pause">${playing ? "❚❚" : "▶"}</button>
+      <button class="mp-btn" data-mp-next="${id}" title="Próximo">⏭</button>
+    </div>
+    <div class="mp-vol">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9v6h4l5 4V5l-5 4H5z"/></svg>
+      <input type="range" min="0" max="100" value="${vol}" id="mpVol" />
+      <span id="mpVolVal" style="min-width:36px;text-align:right;font-variant-numeric:tabular-nums;">${vol}%</span>
+    </div>
+    <div class="modal__section">
+      <div class="modal-switch">
+        <span class="lbl">Energia</span>
+        <button class="switch ${isOn(id) ? "is-on" : ""}" data-modal-toggle="${id}"><span></span></button>
+      </div>
+    </div>
+  `);
+}
+
+function bindModalInteractions() {
+  // Toggle dentro do modal
+  sheetEl.querySelectorAll("[data-modal-toggle]").forEach((btn) => {
+    btn.onclick = async () => {
+      await toggleEntity(btn.dataset.modalToggle);
+      btn.classList.toggle("is-on", isOn(btn.dataset.modalToggle));
+      const lbl = btn.parentElement?.querySelector(".lbl");
+      if (lbl) lbl.textContent = isOn(btn.dataset.modalToggle) ? "Ligado" : "Desligado";
+    };
+  });
+  // Brightness
+  const slider = sheetEl.querySelector("#brightSlider");
+  const brightVal = sheetEl.querySelector("#brightVal");
+  if (slider) {
+    let timer;
+    slider.addEventListener("input", () => { brightVal.textContent = `${slider.value}%`; });
+    slider.addEventListener("change", async () => {
+      const id = sheetEl.querySelector("[data-modal-toggle]")?.dataset.modalToggle;
+      if (!id) return;
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        try {
+          await callService("light", "turn_on", { brightness_pct: Number(slider.value) }, { entity_id: id });
+          if (state.entities[id]) state.entities[id].attributes.brightness_pct = Number(slider.value);
+          patchEntityUI(id);
+        } catch (err) { console.error(err); }
+      }, 80);
+    });
+  }
+  // Color
+  sheetEl.querySelectorAll("[data-rgb]").forEach((sw) => {
+    sw.onclick = async () => {
+      const id = sheetEl.querySelector("[data-modal-toggle]")?.dataset.modalToggle;
+      if (!id) return;
+      const rgb = sw.dataset.rgb.split(",").map(Number);
+      sheetEl.querySelectorAll("[data-rgb]").forEach((s) => s.classList.remove("is-active"));
+      sw.classList.add("is-active");
+      try { await callService("light", "turn_on", { rgb_color: rgb }, { entity_id: id }); }
+      catch (err) { console.error(err); }
+    };
+  });
+  // Color temp
+  sheetEl.querySelectorAll("[data-kelvin]").forEach((p) => {
+    p.onclick = async () => {
+      const id = sheetEl.querySelector("[data-modal-toggle]")?.dataset.modalToggle;
+      if (!id) return;
+      const k = Number(p.dataset.kelvin);
+      sheetEl.querySelectorAll("[data-kelvin]").forEach((s) => s.classList.remove("is-active"));
+      p.classList.add("is-active");
+      try { await callService("light", "turn_on", { kelvin: k }, { entity_id: id }); }
+      catch (err) { console.error(err); }
+    };
+  });
+  // Media controls
+  sheetEl.querySelectorAll("[data-mp-pp]").forEach((b) => {
+    b.onclick = async () => {
+      const id = b.dataset.mpPp;
+      await mediaPlayPause(id);
+      b.textContent = entityState(id) === "playing" ? "❚❚" : "▶";
+    };
+  });
+  sheetEl.querySelectorAll("[data-mp-prev]").forEach((b) => {
+    b.onclick = () => mediaPrevious(b.dataset.mpPrev);
+  });
+  sheetEl.querySelectorAll("[data-mp-next]").forEach((b) => {
+    b.onclick = async () => {
+      try { await callService("media_player", "media_next_track", {}, { entity_id: b.dataset.mpNext }); }
+      catch (err) { console.error(err); }
+    };
+  });
+  const mpVol = sheetEl.querySelector("#mpVol");
+  const mpVolVal = sheetEl.querySelector("#mpVolVal");
+  if (mpVol) {
+    let vt;
+    mpVol.addEventListener("input", () => { mpVolVal.textContent = `${mpVol.value}%`; });
+    mpVol.addEventListener("change", () => {
+      const id = sheetEl.querySelector("[data-mp-pp], [data-modal-toggle]")?.dataset.mpPp
+              || sheetEl.querySelector("[data-modal-toggle]")?.dataset.modalToggle;
+      if (!id) return;
+      clearTimeout(vt);
+      vt = setTimeout(async () => {
+        try { await callService("media_player", "volume_set", { volume_level: Number(mpVol.value) / 100 }, { entity_id: id }); }
+        catch (err) { console.error(err); }
+      }, 80);
+    });
+  }
+}
+
+/* =========================================================
+   Abrir popups via click no card (sem afetar o switch)
+   ========================================================= */
+document.addEventListener("click", (e) => {
+  // ignora clique no switch (já tratado por data-toggle)
+  if (e.target.closest("[data-toggle]")) return;
+  if (e.target.closest("[data-modal-close]")) return;
+  if (e.target.closest(".modal__sheet")) return;
+
+  const card = e.target.closest("[data-entity]");
+  if (!card) return;
+  const id = card.dataset.entity;
+  if (!id) return;
+
+  // botões dentro do card que não devem abrir popup
+  if (e.target.closest("[data-script], [data-media-prev], [data-media-playpause], [data-refresh-camera], [data-route-go], [data-home-camera]")) return;
+
+  const domain = id.split(".")[0];
+  if (domain === "light" || domain === "switch") openLightModal(id);
+  else if (domain === "media_player") openMediaModal(id);
+});
