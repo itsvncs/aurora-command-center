@@ -129,6 +129,8 @@ const state = {
   ws: null,
   cameraTimers: new Map(),
   cameraUrls: new Map(),
+  activeSecurityCamera: null,
+  securityRotateTimer: null,
 };
 
 const $ = (s, el = document) => el.querySelector(s);
@@ -303,12 +305,19 @@ async function fetchCameraFrame(cameraId) {
   return url;
 }
 
+function lightBtn(id, size = "") {
+  const on = isOn(id);
+  return `<button class="lightbtn ${on ? "is-on" : ""}" data-toggle="${id}" aria-label="Ligar/desligar ${friendly(id, id)}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.7.6 1 1.4 1 2.3h6c0-.9.3-1.7 1-2.3A7 7 0 0 0 12 2z"/></svg>
+  </button>`;
+}
+
 function roomCard(id, name = null, meta = "Grupo") {
   const label = name || friendly(id, id);
   return `
-    <article class="card room-card ${isOn(id) ? "is-on" : ""}" data-entity="${id}">
+    <article class="card room-card ${isOn(id) ? "is-on" : ""}" data-entity="${id}" data-group-key="${id}">
       <div class="top"><div class="card-head"><span class="card-title">${meta}</span><div class="card-icon">${iconSvg("light")}</div></div></div>
-      <div class="row"><div><div class="name">${label}</div><div class="stat">${formatState(id)}</div></div><button class="switch ${isOn(id) ? "is-on" : ""}" data-toggle="${id}"><span></span></button></div>
+      <div class="row"><div><div class="name">${label}</div><div class="stat">${formatState(id)}</div></div>${lightBtn(id)}</div>
     </article>`;
 }
 
@@ -319,7 +328,7 @@ function lightCard(item) {
   const fill = pct != null ? pct : (isOn(item.id) ? 88 : 22);
   return `
     <article class="card light-card" data-entity="${item.id}">
-      <div class="top"><div><div class="nm">${label}</div><div class="sb">${item.subtitle} · ${status}</div></div><button class="switch ${isOn(item.id) ? "is-on" : ""}" data-toggle="${item.id}"><span></span></button></div>
+      <div class="top"><div><div class="nm">${label}</div><div class="sb">${item.subtitle} · ${status}</div></div>${lightBtn(item.id)}</div>
       <div class="slider"><span style="width:${fill}%"></span></div>
     </article>`;
 }
@@ -333,15 +342,22 @@ function renderHome() {
   const temp = weather?.attributes?.temperature ?? num(ENTITY_MAP.climate.temp, 0);
   const condition = weather?.state || "indisponível";
   const cam = HOME_CAMERAS.find((c) => c.id === state.activeHomeCamera) || HOME_CAMERAS[0];
+  const houseEnt = entity(ENTITY_MAP.houseMode);
+  const houseOptions = houseEnt?.attributes?.options || ["Dia", "Noite", "Fora", "Cinema"];
+  const houseCurrent = houseEnt?.state || houseOptions[0];
   return `
     <div class="home-grid">
-      <section class="card hero">
+      <section class="card hero" data-camera-fullscreen="${cam.id}">
         <div class="hero__feed"><img class="hero__feed-img" data-camera-feed="${cam.id}" data-camera-slot="home" alt="Sinal da câmera" /></div>
         <div class="hero__overlay">
           <div class="hero__top"><div class="hero__tabs" data-home-camera-tabs>${HOME_CAMERAS.map((c) => `<button class="${c.id === cam.id ? "is-active" : ""}" data-home-camera="${c.id}">${c.label}</button>`).join("")}</div><span class="chip chip--live"><span class="dot"></span> Ao vivo</span></div>
-          <div class="hero__bottom"><div><h3 class="hero__title">Casa</h3><div class="hero__meta" data-home-camera-meta>${cam.label} · ${condition} · ${temp}°C · modo ${entityState(ENTITY_MAP.houseMode, "Dia")}</div></div><div class="hero__actions"><button class="btn btn--ghost" data-route-go="baby">Babytracker</button></div></div>
+          <div class="hero__bottom"><div><h3 class="hero__title">Casa</h3><div class="hero__meta" data-home-camera-meta>${cam.label} · ${condition} · ${temp}°C · modo ${houseCurrent}</div></div><div class="hero__actions"><button class="btn btn--ghost" data-route-go="baby">Babytracker</button></div></div>
         </div>
       </section>
+      <div class="house-modes" data-house-modes>
+        <span class="lbl">Modo da casa</span>
+        ${houseOptions.map((opt) => `<button class="chip-mode ${opt === houseCurrent ? "is-active" : ""}" data-house-mode="${opt}">${opt}</button>`).join("")}
+      </div>
       ${roomCard(ENTITY_MAP.groups.sala, "Sala")}
       ${roomCard(ENTITY_MAP.groups.cozinha, "Cozinha")}
       ${roomCard(ENTITY_MAP.groups.servicos, "Serviços")}
@@ -372,7 +388,24 @@ function renderClimate() {
 }
 
 function renderSecurity() {
-  return `${sectionHead("Segurança", "Porta principal e alarme")}<div class="home-grid" style="grid-template-columns:2fr 1fr 1fr;"><article class="card hero" style="min-height:260px;"><div class="hero__feed"><img class="hero__feed-img" data-camera-feed="${ENTITY_MAP.baby.camera}" alt="Sinal da câmera" /></div><div class="hero__overlay"><div class="hero__top"><span class="chip chip--live"><span class="dot"></span> Monitoramento</span></div><div class="hero__bottom"><div><h3 class="hero__title">Porta principal</h3><div class="hero__meta">${formatState(ENTITY_MAP.security.door)}</div></div></div></div></article><article class="card stat-card"><div class="label">Alarme</div><div class="value">${formatState(ENTITY_MAP.security.alarm)}</div></article><article class="card stat-card"><div class="label">Porta</div><div class="value">${formatState(ENTITY_MAP.security.door)}</div></article></div>`;
+  const cams = HOME_CAMERAS;
+  const cur = state.activeSecurityCamera || cams[0].id;
+  state.activeSecurityCamera = cur;
+  const curLabel = (cams.find((c) => c.id === cur) || cams[0]).label;
+  return `${sectionHead("Segurança", "Câmeras, porta principal e alarme")}<div class="home-grid" style="grid-template-columns:2fr 1fr 1fr;">
+    <article class="card hero" style="min-height:380px;grid-row:span 2;" data-camera-fullscreen="${cur}" data-security-hero>
+      <div class="hero__feed"><img class="hero__feed-img" data-camera-feed="${cur}" data-camera-slot="security" alt="Sinal da câmera" /></div>
+      <div class="hero__overlay">
+        <div class="hero__top">
+          <div class="hero__tabs" data-security-camera-tabs>${cams.map((c) => `<button class="${c.id === cur ? "is-active" : ""}" data-security-camera="${c.id}">${c.label}</button>`).join("")}</div>
+          <span class="chip chip--live"><span class="dot"></span> Auto · 10s</span>
+        </div>
+        <div class="hero__bottom"><div><h3 class="hero__title" data-security-cam-label>${curLabel}</h3><div class="hero__meta">Arraste para trocar · toque para abrir</div></div></div>
+      </div>
+    </article>
+    <article class="card stat-card" data-entity="${ENTITY_MAP.security.alarm}"><div class="label">Alarme</div><div class="value">${formatState(ENTITY_MAP.security.alarm)}</div></article>
+    <article class="card stat-card"><div class="label">Porta</div><div class="value">${formatState(ENTITY_MAP.security.door)}</div></article>
+  </div>`;
 }
 
 function mediaCard(id, label) {
@@ -387,7 +420,7 @@ function renderMedia() {
 }
 
 function toggleRow(id, name, subtitle) {
-  return `<div class="toggle-row ${isOn(id) ? "is-on" : ""}" data-entity="${id}"><div><div class="nm">${name}</div><div class="sb">${subtitle}</div></div><button class="switch ${isOn(id) ? "is-on" : ""}" data-toggle="${id}"><span></span></button></div>`;
+  return `<div class="toggle-row ${isOn(id) ? "is-on" : ""}" data-entity="${id}"><div><div class="nm">${name}</div><div class="sb">${subtitle}</div></div>${lightBtn(id)}</div>`;
 }
 
 function renderBaby() {
@@ -397,7 +430,7 @@ function renderBaby() {
   const mediaEnt = entity(mediaId);
   const mediaTitle = mediaEnt?.attributes?.media_title || friendly(mediaId, "Echo Quarto");
   const mediaArtist = mediaEnt?.attributes?.media_artist || formatState(mediaId);
-  return `<div class="baby"><div class="baby__row1"><article class="card baby-card baby-status ${occ ? "is-occupied" : ""}"><div class="head"><div class="ttl">Status</div><div class="card-icon">${iconSvg("home")}</div></div><div><div class="sub">Ocupação do berço</div><div style="font-family:var(--f-display);font-size:28px;font-weight:700;margin-top:6px;">${occ ? "Ocupado" : "Livre"}</div></div><div class="face"><div class="av">E</div><div><div class="nm">${entityState(ENTITY_MAP.baby.face, "desconhecida")}</div><div class="tm">Última face reconhecida</div></div></div></article><article class="card baby-card baby-temp"><div class="head"><div class="ttl">Temperatura</div><div class="card-icon">${iconSvg("temp")}</div></div><div class="row"><div class="ring"><b>${num(ENTITY_MAP.baby.temp, 0).toFixed(1)}°</b></div><div><div class="sub">Atual</div><div style="font-family:var(--f-display);font-size:26px;font-weight:700;">${num(ENTITY_MAP.baby.temp, 0).toFixed(1)}°C</div><div class="sub" style="margin-top:8px;">Compensada ${entityState(ENTITY_MAP.baby.compensated, "--")}</div></div></div></article><article class="card baby-card baby-media ${entityState(mediaId) === "paused" ? "is-paused" : ""}" data-entity="${mediaId}"><div class="head"><div class="ttl">Mídia</div><div class="card-icon">${iconSvg("media")}</div></div><div class="nowplay">${mediaTitle}</div><div class="artist">${mediaArtist}</div><div class="ctrls"><button class="btn" data-media-prev="${mediaId}">◀</button><button class="pp" data-media-playpause="${mediaId}">${entityState(mediaId) === "playing" ? "❚❚" : "▶"}</button><div class="vol"><i></i><i></i><i></i><i></i></div></div></article><article class="card baby-card baby-noise ${noiseOn ? "is-on" : ""}" data-entity="${ENTITY_MAP.baby.noise}"><div class="head"><div class="ttl">Ruído branco</div><div class="card-icon">${iconSvg("noise")}</div></div><div class="wave"><svg viewBox="0 0 200 40" fill="none"><path d="M0 20c20 0 20-12 40-12s20 24 40 24 20-24 40-24 20 24 40 24 20-12 40-12" stroke="currentColor" stroke-width="3" stroke-linecap="round" opacity=".8"/></svg></div><div class="btns"><button class="${noiseOn ? "is-active" : ""}" data-script="${ENTITY_MAP.scripts.noiseOn}">Ligar</button><button class="${!noiseOn ? "is-active" : ""}" data-script="${ENTITY_MAP.scripts.noiseOff}">Parar</button></div></article><article class="card baby-card baby-ctrls"><div class="head"><div class="ttl">Controles</div><div class="card-icon">${iconSvg("light")}</div></div>${toggleRow(ENTITY_MAP.baby.teto, "Teto", "Luz principal")}${toggleRow(ENTITY_MAP.baby.led, "Led Esther", "Apoio")}${toggleRow(ENTITY_MAP.baby.heater, "Aquecedor", "Conforto")}</article></div><section class="card baby__cam"><div class="feed"><img class="feed-img" data-camera-feed="${ENTITY_MAP.baby.camera}" alt="Sinal da câmera" /></div><div class="ovl"><div class="top"><div><div class="nm">Berço</div><div class="meta">Quarto da Esther · ${occ ? "ocupado" : "livre"}</div></div><div class="acts"><span class="pill live"><span class="pulse"></span>Live</span><span class="pill">Sinal ativo</span></div></div><div class="bot"><div></div><div class="acts"><button class="btn btn--ghost" data-refresh-camera="${ENTITY_MAP.baby.camera}">Atualizar</button><button class="btn" data-route-go="security">Segurança</button></div></div></div></section></div>`;
+  return `<div class="baby"><div class="baby__row1"><article class="card baby-card baby-status ${occ ? "is-occupied" : ""}"><div class="head"><div class="ttl">Status</div><div class="card-icon">${iconSvg("home")}</div></div><div><div class="sub">Ocupação do berço</div><div style="font-family:var(--f-display);font-size:30px;font-weight:700;margin-top:8px;">${occ ? "Ocupado" : "Livre"}</div></div></article><article class="card baby-card baby-temp"><div class="head"><div class="ttl">Temperatura</div><div class="card-icon">${iconSvg("temp")}</div></div><div class="row" style="justify-content:center;align-items:center;"><div class="ring" style="width:120px;height:120px;"><b style="font-size:26px;">${num(ENTITY_MAP.baby.temp, 0).toFixed(1)}°</b></div></div></article><article class="card baby-card baby-media ${entityState(mediaId) === "paused" ? "is-paused" : ""}" data-entity="${mediaId}"><div class="head"><div class="ttl">Mídia</div><div class="card-icon">${iconSvg("media")}</div></div><div class="nowplay">${mediaTitle}</div><div class="artist">${mediaArtist}</div><div class="ctrls"><button class="btn" data-media-prev="${mediaId}">◀</button><button class="pp" data-media-playpause="${mediaId}">${entityState(mediaId) === "playing" ? "❚❚" : "▶"}</button><div class="vol"><i></i><i></i><i></i><i></i></div></div></article><article class="card baby-card baby-noise ${noiseOn ? "is-on" : ""}" data-entity="${ENTITY_MAP.baby.noise}"><div class="head"><div class="ttl">Ruído branco</div><div class="card-icon">${iconSvg("noise")}</div></div><div class="wave"><svg viewBox="0 0 200 40" fill="none"><path d="M0 20c20 0 20-12 40-12s20 24 40 24 20-24 40-24 20 24 40 24 20-12 40-12" stroke="currentColor" stroke-width="3" stroke-linecap="round" opacity=".8"/></svg></div><div class="btns"><button class="${noiseOn ? "is-active" : ""}" data-script="${ENTITY_MAP.scripts.noiseOn}">Ligar</button><button class="${!noiseOn ? "is-active" : ""}" data-script="${ENTITY_MAP.scripts.noiseOff}">Parar</button></div></article><article class="card baby-card baby-ctrls"><div class="head"><div class="ttl">Controles</div><div class="card-icon">${iconSvg("light")}</div></div>${toggleRow(ENTITY_MAP.baby.teto, "Teto", "Luz principal")}${toggleRow(ENTITY_MAP.baby.led, "Led Esther", "Apoio")}${toggleRow(ENTITY_MAP.baby.heater, "Aquecedor", "Conforto")}</article></div><section class="card baby__cam" data-camera-fullscreen="${ENTITY_MAP.baby.camera}"><div class="feed"><img class="feed-img" data-camera-feed="${ENTITY_MAP.baby.camera}" alt="Sinal da câmera" /></div><div class="ovl"><div class="top"><div><div class="nm">Berço</div><div class="meta">Quarto da Esther · ${occ ? "ocupado" : "livre"}</div></div><div class="acts"><span class="pill live"><span class="pulse"></span>Live</span><span class="pill">Sinal ativo</span></div></div><div class="bot"><div></div><div class="acts"><button class="btn btn--ghost" data-refresh-camera="${ENTITY_MAP.baby.camera}">Atualizar</button><button class="btn" data-route-go="security">Segurança</button></div></div></div></section></div>`;
 }
 
 function renderError() {
@@ -425,6 +458,7 @@ function patchEntityUI(id) {
   const current = isOn(id);
   const pct = brightnessPct(id);
   document.querySelectorAll(`[data-toggle="${id}"]`).forEach((el) => el.classList.toggle("is-on", current));
+  document.querySelectorAll(`.lightbtn[data-toggle="${id}"]`).forEach((el) => el.classList.toggle("is-on", current));
   document.querySelectorAll(`[data-entity="${id}"]`).forEach((el) => {
     el.classList.toggle("is-on", current);
     if (el.classList.contains("room-card")) {
@@ -1472,18 +1506,28 @@ editBanner.textContent = "Concluir edição";
 editBanner.onclick = disableEdit;
 document.body.appendChild(editBanner);
 
-// long-press no card da home para entrar em edição
+// long-press (600ms) em card de grupo da home -> abre popup com entidades
 let lpTimer = null;
+let lpFired = false;
 view.addEventListener("pointerdown", (e) => {
   if (state.route !== "home") return;
-  if (document.body.classList.contains("is-editing")) return;
-  if (!e.target.closest(".home-grid > *")) return;
-  if (e.target.closest("[data-toggle], button, [data-home-camera]")) return;
-  lpTimer = setTimeout(enableEdit, 600);
+  const card = e.target.closest(".room-card[data-group-key]");
+  if (!card) return;
+  if (e.target.closest("[data-toggle], button")) return;
+  lpFired = false;
+  lpTimer = setTimeout(() => {
+    lpFired = true;
+    haptic(20);
+    openGroupModal(card.dataset.groupKey);
+  }, 600);
 });
-["pointerup", "pointermove", "pointercancel"].forEach((ev) =>
+["pointerup", "pointermove", "pointercancel", "pointerleave"].forEach((ev) =>
   view.addEventListener(ev, () => { clearTimeout(lpTimer); })
 );
+// se long-press disparou, suprime click subsequente
+document.addEventListener("click", (e) => {
+  if (lpFired) { e.stopPropagation(); e.preventDefault(); lpFired = false; }
+}, true);
 
 /* =========================================================
    HOOKS — render() extras + haptics nos toggles
@@ -1533,3 +1577,353 @@ if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("/dashboard/sw.js").catch(() => {});
   });
 }
+
+/* =========================================================
+   GROUP MODAL (long-press num grupo)
+   ========================================================= */
+function openGroupModal(groupId) {
+  const groupKey = Object.entries(ENTITY_MAP.groups).find(([k, v]) => v === groupId)?.[0];
+  const items = groupKey ? ENTITY_MAP.lights[groupKey] || [] : [];
+  const all = [{ id: groupId, name: friendly(groupId, groupId), subtitle: "Grupo" }, ...items.filter((i) => i.id !== groupId)];
+  openModal(`
+    <div class="modal__head">
+      <div>
+        <h2 class="modal__title">${friendly(groupId, groupId)}</h2>
+        <div class="modal__sub">Controle individual do grupo</div>
+      </div>
+      <button class="modal__close" data-modal-close aria-label="Fechar">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="group-list">
+      ${all.map((it) => `
+        <div class="toggle-row ${isOn(it.id) ? "is-on" : ""}" data-entity="${it.id}">
+          <div><div class="nm">${friendly(it.id, it.name)}</div><div class="sb">${it.subtitle || ""}</div></div>
+          ${lightBtn(it.id)}
+        </div>
+      `).join("")}
+    </div>
+  `);
+  sheetEl.querySelectorAll("[data-toggle]").forEach((btn) => {
+    btn.onclick = async (e) => {
+      e.stopPropagation();
+      await toggleEntity(btn.dataset.toggle);
+    };
+  });
+}
+
+/* =========================================================
+   HOUSE MODES + SECURITY SWIPE + FULLSCREEN CAMERA
+   ========================================================= */
+// Bind hooks após cada render
+const _origBindInteractions = bindInteractions;
+bindInteractions = function () {
+  _origBindInteractions();
+
+  // Modos da casa
+  document.querySelectorAll("[data-house-mode]").forEach((btn) => {
+    btn.onclick = async (e) => {
+      e.stopPropagation();
+      const opt = btn.dataset.houseMode;
+      document.querySelectorAll("[data-house-mode]").forEach((b) => b.classList.toggle("is-active", b === btn));
+      try {
+        await callService("input_select", "select_option", { option: opt }, { entity_id: ENTITY_MAP.houseMode });
+        setEntityState(ENTITY_MAP.houseMode, opt);
+        updateHomeCameraMeta();
+      } catch (err) { console.error(err); }
+    };
+  });
+
+  // Tabs câmera de segurança
+  document.querySelectorAll("[data-security-camera]").forEach((btn) => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      switchSecurityCamera(btn.dataset.securityCamera);
+      restartSecurityRotate();
+    };
+  });
+
+  // Swipe na hero da home
+  const homeHero = document.querySelector(".hero[data-camera-fullscreen]");
+  if (homeHero && state.route === "home") attachSwipe(homeHero, (dir) => {
+    const ids = HOME_CAMERAS.map((c) => c.id);
+    const i = ids.indexOf(state.activeHomeCamera);
+    const nextIdx = (i + (dir === "left" ? 1 : -1) + ids.length) % ids.length;
+    switchHomeCamera(ids[nextIdx]);
+  });
+
+  // Swipe no hero de segurança
+  const secHero = document.querySelector("[data-security-hero]");
+  if (secHero && state.route === "security") {
+    attachSwipe(secHero, (dir) => {
+      const ids = HOME_CAMERAS.map((c) => c.id);
+      const i = ids.indexOf(state.activeSecurityCamera);
+      const nextIdx = (i + (dir === "left" ? 1 : -1) + ids.length) % ids.length;
+      switchSecurityCamera(ids[nextIdx]);
+      restartSecurityRotate();
+    });
+    startSecurityRotate();
+  } else {
+    stopSecurityRotate();
+  }
+
+  // Click em hero (que NÃO seja num botão interno) -> fullscreen
+  document.querySelectorAll("[data-camera-fullscreen]").forEach((el) => {
+    el.addEventListener("click", (e) => {
+      if (e.target.closest("button, [data-toggle], [data-home-camera], [data-security-camera]")) return;
+      if (el.dataset._swiped === "1") { el.dataset._swiped = "0"; return; }
+      openCameraFs(el.dataset.cameraFullscreen);
+    });
+  });
+};
+
+function attachSwipe(el, onSwipe) {
+  let sx = 0, sy = 0, t0 = 0, active = false;
+  el.addEventListener("pointerdown", (e) => {
+    if (e.target.closest("button")) return;
+    sx = e.clientX; sy = e.clientY; t0 = Date.now(); active = true;
+  });
+  el.addEventListener("pointerup", (e) => {
+    if (!active) return; active = false;
+    const dx = e.clientX - sx, dy = e.clientY - sy;
+    if (Date.now() - t0 < 600 && Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.4) {
+      el.dataset._swiped = "1";
+      onSwipe(dx < 0 ? "left" : "right");
+    }
+  });
+  el.addEventListener("pointercancel", () => { active = false; });
+}
+
+function switchSecurityCamera(nextId) {
+  if (!nextId || nextId === state.activeSecurityCamera) return;
+  state.activeSecurityCamera = nextId;
+  const img = document.querySelector("[data-camera-slot='security']");
+  const label = document.querySelector("[data-security-cam-label]");
+  document.querySelectorAll("[data-security-camera]").forEach((b) => b.classList.toggle("is-active", b.dataset.securityCamera === nextId));
+  const heroFs = document.querySelector("[data-security-hero]");
+  if (heroFs) heroFs.dataset.cameraFullscreen = nextId;
+  if (label) label.textContent = (HOME_CAMERAS.find((c) => c.id === nextId) || {}).label || "";
+  if (img) {
+    img.classList.add("is-slide-out-left");
+    setTimeout(async () => {
+      img.dataset.cameraFeed = nextId;
+      await refreshCameraFeed(img);
+      bindCameraFeed(img);
+      img.classList.remove("is-slide-out-left");
+    }, 180);
+  }
+}
+
+function startSecurityRotate() {
+  stopSecurityRotate();
+  state.securityRotateTimer = setInterval(() => {
+    if (state.route !== "security") return stopSecurityRotate();
+    const ids = HOME_CAMERAS.map((c) => c.id);
+    const i = ids.indexOf(state.activeSecurityCamera);
+    switchSecurityCamera(ids[(i + 1) % ids.length]);
+  }, 10000);
+}
+function stopSecurityRotate() {
+  if (state.securityRotateTimer) clearInterval(state.securityRotateTimer);
+  state.securityRotateTimer = null;
+}
+function restartSecurityRotate() {
+  if (state.route === "security") startSecurityRotate();
+}
+
+/* =========================================================
+   CÂMERA FULLSCREEN
+   ========================================================= */
+const camFs = document.createElement("div");
+camFs.className = "camfs";
+camFs.innerHTML = `
+  <button class="camfs__close" aria-label="Fechar">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+  </button>
+  <div class="camfs__bar"></div>
+  <img class="camfs__img" alt="Câmera fullscreen" />
+  <div class="camfs__hint">Arraste para trocar · toque para fechar</div>
+`;
+document.body.appendChild(camFs);
+const camFsImg = camFs.querySelector(".camfs__img");
+const camFsBar = camFs.querySelector(".camfs__bar");
+let camFsTimer = null;
+let camFsCurrent = null;
+const ALL_CAMS = [...HOME_CAMERAS, { id: ENTITY_MAP.baby.camera, label: "Berço" }];
+
+function paintCamFsBar() {
+  camFsBar.innerHTML = ALL_CAMS.map((c) => `<button data-camfs="${c.id}" class="${c.id === camFsCurrent ? "is-active" : ""}">${c.label}</button>`).join("");
+  camFsBar.querySelectorAll("[data-camfs]").forEach((b) => {
+    b.onclick = (e) => { e.stopPropagation(); switchCamFs(b.dataset.camfs); };
+  });
+}
+async function refreshCamFs() {
+  if (!camFsCurrent) return;
+  try {
+    const url = await fetchCameraFrame(camFsCurrent);
+    if (url) camFsImg.src = url;
+  } catch {}
+}
+function switchCamFs(id, dir = "left") {
+  if (!id || id === camFsCurrent) return;
+  camFsCurrent = id;
+  camFsImg.classList.add(dir === "left" ? "is-slide-out-left" : "is-slide-out-right");
+  paintCamFsBar();
+  setTimeout(async () => {
+    await refreshCamFs();
+    camFsImg.classList.remove("is-slide-out-left", "is-slide-out-right");
+  }, 180);
+}
+function openCameraFs(id) {
+  camFsCurrent = id;
+  paintCamFsBar();
+  camFs.classList.add("is-on");
+  refreshCamFs();
+  clearInterval(camFsTimer);
+  camFsTimer = setInterval(refreshCamFs, 1500);
+  haptic(10);
+}
+function closeCameraFs() {
+  camFs.classList.remove("is-on");
+  clearInterval(camFsTimer);
+  camFsTimer = null;
+  camFsCurrent = null;
+}
+camFs.querySelector(".camfs__close").addEventListener("click", (e) => { e.stopPropagation(); closeCameraFs(); });
+camFs.addEventListener("click", (e) => {
+  if (e.target.closest("button, .camfs__bar")) return;
+  closeCameraFs();
+});
+attachSwipe(camFs, (dir) => {
+  const ids = ALL_CAMS.map((c) => c.id);
+  const i = ids.indexOf(camFsCurrent);
+  const next = ids[(i + (dir === "left" ? 1 : -1) + ids.length) % ids.length];
+  switchCamFs(next, dir);
+});
+
+/* =========================================================
+   SCREENSAVER — bloquear na página baby
+   ========================================================= */
+const _origReset = resetSsTimer;
+resetSsTimer = function () {
+  clearTimeout(ssTimer);
+  if (state.route === "baby") return;
+  ssTimer = setTimeout(showScreensaver, SS_TIMEOUT);
+};
+// Quando entra na baby: garante off
+const _origGo = go;
+go = function (route) {
+  _origGo(route);
+  if (state.route === "baby") {
+    clearTimeout(ssTimer);
+    hideScreensaver();
+  } else {
+    resetSsTimer();
+  }
+  stopSecurityRotate();
+};
+
+/* =========================================================
+   SIDEBAR — avatar com iniciais coloridas + engrenagem (settings)
+   ========================================================= */
+(function setupSidebar() {
+  const avatar = document.querySelector(".avatar");
+  if (avatar) {
+    const photo = localStorage.getItem("auroraUserPhoto");
+    if (photo) {
+      avatar.innerHTML = `<img src="${photo}" alt="Usuário" />`;
+    }
+    avatar.style.cursor = "pointer";
+    avatar.title = "Trocar foto do usuário";
+    avatar.addEventListener("click", () => {
+      const input = document.createElement("input");
+      input.type = "file"; input.accept = "image/*";
+      input.onchange = () => {
+        const f = input.files?.[0]; if (!f) return;
+        const r = new FileReader();
+        r.onload = () => {
+          localStorage.setItem("auroraUserPhoto", r.result);
+          avatar.innerHTML = `<img src="${r.result}" alt="Usuário" />`;
+        };
+        r.readAsDataURL(f);
+      };
+      input.click();
+    });
+  }
+  const gear = document.querySelector(".sidebar__foot .nav-item");
+  if (gear) {
+    gear.addEventListener("click", openSettingsModal);
+  }
+})();
+
+function openSettingsModal() {
+  const photo = localStorage.getItem("auroraUserPhoto");
+  openModal(`
+    <div class="modal__head">
+      <div>
+        <h2 class="modal__title">Ajustes</h2>
+        <div class="modal__sub">Preferências da dashboard</div>
+      </div>
+      <button class="modal__close" data-modal-close aria-label="Fechar">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="modal__section">
+      <div class="modal__label">Tema</div>
+      <div class="temp-row">
+        <button class="temp-pill" data-set-theme="normal"><span class="swatch" style="background:#1a1d22"></span><span>Normal</span></button>
+        <button class="temp-pill" data-set-theme="dark"><span class="swatch" style="background:#000"></span><span>Escuro</span></button>
+        <button class="temp-pill" data-set-theme="night"><span class="swatch" style="background:#ff5a3a"></span><span>Noturno</span></button>
+      </div>
+    </div>
+    <div class="modal__section">
+      <div class="modal__label">Token Home Assistant</div>
+      <input id="settingsToken" type="password" placeholder="Long-Lived Access Token" style="width:100%;padding:12px 14px;border-radius:14px;border:1px solid var(--glass-stroke);background:var(--glass-2);color:inherit;outline:none;" />
+      <div style="display:flex;gap:10px;margin-top:10px;">
+        <button class="btn btn--lime" id="saveTokenSet">Salvar token</button>
+        <button class="btn" id="clearTokenSet">Limpar</button>
+      </div>
+    </div>
+    <div class="modal__section">
+      <div class="modal__label">Foto do usuário</div>
+      <div style="display:flex;gap:10px;align-items:center;">
+        ${photo ? `<img src="${photo}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;" />` : `<div class="avatar" style="position:relative;">W</div>`}
+        <button class="btn" id="changePhotoBtn">Trocar foto</button>
+        ${photo ? `<button class="btn" id="removePhotoBtn">Remover</button>` : ""}
+      </div>
+    </div>
+    <div class="modal__section">
+      <div class="modal__label">Recarregar dashboard</div>
+      <button class="btn" id="reloadDashBtn">Recarregar agora</button>
+    </div>
+  `);
+  sheetEl.querySelectorAll("[data-set-theme]").forEach((b) => {
+    b.onclick = () => { applyTheme(b.dataset.setTheme); };
+  });
+  sheetEl.querySelector("#saveTokenSet")?.addEventListener("click", () => {
+    const v = sheetEl.querySelector("#settingsToken").value.trim();
+    if (!v) return;
+    localStorage.setItem("auroraHaToken", v);
+    bootstrap();
+    closeModal();
+  });
+  sheetEl.querySelector("#clearTokenSet")?.addEventListener("click", () => {
+    localStorage.removeItem("auroraHaToken");
+    state.token = null;
+    closeModal();
+    bootstrap();
+  });
+  sheetEl.querySelector("#changePhotoBtn")?.addEventListener("click", () => {
+    document.querySelector(".avatar")?.click();
+    closeModal();
+  });
+  sheetEl.querySelector("#removePhotoBtn")?.addEventListener("click", () => {
+    localStorage.removeItem("auroraUserPhoto");
+    const av = document.querySelector(".avatar");
+    if (av) av.innerHTML = "W";
+    closeModal();
+  });
+  sheetEl.querySelector("#reloadDashBtn")?.addEventListener("click", () => location.reload());
+}
+
+/* Re-exclui o card popup da entidade alarme da segurança (quando há confirm) */
