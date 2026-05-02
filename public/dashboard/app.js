@@ -340,15 +340,22 @@ function renderHome() {
   const temp = weather?.attributes?.temperature ?? num(ENTITY_MAP.climate.temp, 0);
   const condition = weather?.state || "indisponível";
   const cam = HOME_CAMERAS.find((c) => c.id === state.activeHomeCamera) || HOME_CAMERAS[0];
+  const houseEnt = entity(ENTITY_MAP.houseMode);
+  const houseOptions = houseEnt?.attributes?.options || ["Dia", "Noite", "Fora", "Cinema"];
+  const houseCurrent = houseEnt?.state || houseOptions[0];
   return `
     <div class="home-grid">
-      <section class="card hero">
+      <section class="card hero" data-camera-fullscreen="${cam.id}">
         <div class="hero__feed"><img class="hero__feed-img" data-camera-feed="${cam.id}" data-camera-slot="home" alt="Sinal da câmera" /></div>
         <div class="hero__overlay">
           <div class="hero__top"><div class="hero__tabs" data-home-camera-tabs>${HOME_CAMERAS.map((c) => `<button class="${c.id === cam.id ? "is-active" : ""}" data-home-camera="${c.id}">${c.label}</button>`).join("")}</div><span class="chip chip--live"><span class="dot"></span> Ao vivo</span></div>
-          <div class="hero__bottom"><div><h3 class="hero__title">Casa</h3><div class="hero__meta" data-home-camera-meta>${cam.label} · ${condition} · ${temp}°C · modo ${entityState(ENTITY_MAP.houseMode, "Dia")}</div></div><div class="hero__actions"><button class="btn btn--ghost" data-route-go="baby">Babytracker</button></div></div>
+          <div class="hero__bottom"><div><h3 class="hero__title">Casa</h3><div class="hero__meta" data-home-camera-meta>${cam.label} · ${condition} · ${temp}°C · modo ${houseCurrent}</div></div><div class="hero__actions"><button class="btn btn--ghost" data-route-go="baby">Babytracker</button></div></div>
         </div>
       </section>
+      <div class="house-modes" data-house-modes>
+        <span class="lbl">Modo da casa</span>
+        ${houseOptions.map((opt) => `<button class="chip-mode ${opt === houseCurrent ? "is-active" : ""}" data-house-mode="${opt}">${opt}</button>`).join("")}
+      </div>
       ${roomCard(ENTITY_MAP.groups.sala, "Sala")}
       ${roomCard(ENTITY_MAP.groups.cozinha, "Cozinha")}
       ${roomCard(ENTITY_MAP.groups.servicos, "Serviços")}
