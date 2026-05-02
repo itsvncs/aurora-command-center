@@ -303,12 +303,19 @@ async function fetchCameraFrame(cameraId) {
   return url;
 }
 
+function lightBtn(id, size = "") {
+  const on = isOn(id);
+  return `<button class="lightbtn ${on ? "is-on" : ""}" data-toggle="${id}" aria-label="Ligar/desligar ${friendly(id, id)}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.7.6 1 1.4 1 2.3h6c0-.9.3-1.7 1-2.3A7 7 0 0 0 12 2z"/></svg>
+  </button>`;
+}
+
 function roomCard(id, name = null, meta = "Grupo") {
   const label = name || friendly(id, id);
   return `
-    <article class="card room-card ${isOn(id) ? "is-on" : ""}" data-entity="${id}">
+    <article class="card room-card ${isOn(id) ? "is-on" : ""}" data-entity="${id}" data-group-key="${id}">
       <div class="top"><div class="card-head"><span class="card-title">${meta}</span><div class="card-icon">${iconSvg("light")}</div></div></div>
-      <div class="row"><div><div class="name">${label}</div><div class="stat">${formatState(id)}</div></div><button class="switch ${isOn(id) ? "is-on" : ""}" data-toggle="${id}"><span></span></button></div>
+      <div class="row"><div><div class="name">${label}</div><div class="stat">${formatState(id)}</div></div>${lightBtn(id)}</div>
     </article>`;
 }
 
@@ -319,7 +326,7 @@ function lightCard(item) {
   const fill = pct != null ? pct : (isOn(item.id) ? 88 : 22);
   return `
     <article class="card light-card" data-entity="${item.id}">
-      <div class="top"><div><div class="nm">${label}</div><div class="sb">${item.subtitle} · ${status}</div></div><button class="switch ${isOn(item.id) ? "is-on" : ""}" data-toggle="${item.id}"><span></span></button></div>
+      <div class="top"><div><div class="nm">${label}</div><div class="sb">${item.subtitle} · ${status}</div></div>${lightBtn(item.id)}</div>
       <div class="slider"><span style="width:${fill}%"></span></div>
     </article>`;
 }
