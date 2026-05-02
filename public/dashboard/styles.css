@@ -1135,3 +1135,201 @@ body[data-theme="night"] img { opacity: .55; }
 
 /* clickability hint */
 .room-card, .light-card, .player, .baby-media { cursor: pointer; }
+
+/* =========================================================
+   FAB Babytracker
+   ========================================================= */
+.fab {
+  position: fixed; right: 24px; bottom: 24px; z-index: 90;
+  width: 60px; height: 60px; border-radius: 50%;
+  border: 0; cursor: pointer;
+  background: linear-gradient(135deg, var(--c-lime), var(--c-lime-soft));
+  color: #0a0c0f;
+  display: grid; place-items: center;
+  box-shadow: 0 18px 40px -10px rgba(214,255,77,.5), 0 4px 12px rgba(0,0,0,.4);
+  transition: transform var(--d-base) var(--ease-out), opacity var(--d-base);
+}
+.fab:hover { transform: translateY(-2px) scale(1.04); }
+.fab:active { transform: scale(.94); }
+.fab[hidden] { display: none; }
+.fab__pulse {
+  position: absolute; inset: -6px; border-radius: 50%;
+  border: 2px solid var(--c-rose);
+  animation: fabPulse 1.6s ease-out infinite;
+}
+.fab__pulse[hidden] { display: none; }
+@keyframes fabPulse {
+  0% { transform: scale(.9); opacity: .9; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+
+/* berço ocupado: chip live pulsa */
+.chip--live .dot,
+.pill.live .pulse {
+  animation: livePulse 1.4s ease-in-out infinite;
+}
+@keyframes livePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: .35; transform: scale(.7); }
+}
+
+/* =========================================================
+   SCREENSAVER
+   ========================================================= */
+.screensaver {
+  position: fixed; inset: 0; z-index: 300;
+  background: radial-gradient(ellipse at center, #0a0c0f 0%, #000 100%);
+  color: var(--c-ink);
+  display: none;
+  flex-direction: column; align-items: center; justify-content: center;
+  gap: 18px;
+  font-family: var(--f-display);
+  cursor: pointer;
+  user-select: none;
+  animation: ssIn .5s var(--ease-out);
+}
+.screensaver.is-on { display: flex; }
+@keyframes ssIn { from { opacity: 0 } to { opacity: 1 } }
+.ss__time {
+  font-size: clamp(120px, 22vw, 280px);
+  font-weight: 700; letter-spacing: -.04em;
+  line-height: 1; text-shadow: 0 0 80px rgba(214,255,77,.06);
+}
+.ss__date {
+  font-size: 22px; color: var(--c-ink-mute);
+  text-transform: capitalize; letter-spacing: .02em;
+}
+.ss__row { display: flex; gap: 14px; margin-top: 14px; }
+.ss__chip {
+  padding: 10px 18px; border-radius: var(--r-pill);
+  border: 1px solid var(--glass-stroke);
+  background: var(--glass-2);
+  font-family: var(--f-sans); font-size: 14px;
+  color: var(--c-ink-soft);
+}
+.ss__hint {
+  position: absolute; bottom: 28px;
+  font-family: var(--f-sans); font-size: 12px;
+  color: var(--c-ink-faint); letter-spacing: .15em; text-transform: uppercase;
+  animation: hintBlink 2.4s ease-in-out infinite;
+}
+@keyframes hintBlink { 0%,100% { opacity: .4 } 50% { opacity: 1 } }
+
+body[data-theme="night"] .screensaver {
+  background: #000;
+  color: var(--c-ink);
+}
+body[data-theme="night"] .ss__time {
+  text-shadow: 0 0 80px rgba(255,90,58,.2);
+}
+
+/* =========================================================
+   CENAS — grid no popup
+   ========================================================= */
+.scenes-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px;
+}
+.scene-tile {
+  appearance: none; border: 1px solid var(--glass-stroke);
+  background: var(--glass-2); color: var(--c-ink);
+  padding: 22px 18px; border-radius: var(--r-lg);
+  cursor: pointer; text-align: left;
+  display: flex; flex-direction: column; gap: 12px;
+  transition: all var(--d-fast);
+  position: relative; overflow: hidden;
+}
+.scene-tile:hover { background: var(--glass-3); transform: translateY(-2px); }
+.scene-tile:active { transform: scale(.98); }
+.scene-tile .ic {
+  width: 44px; height: 44px; border-radius: 14px;
+  background: var(--glass-3); display: grid; place-items: center;
+  color: var(--c-lime);
+}
+.scene-tile .nm { font-family: var(--f-display); font-size: 18px; font-weight: 700; }
+.scene-tile .sb { font-size: 13px; color: var(--c-ink-mute); }
+.scene-tile[data-scene="goodnight"] .ic { background: rgba(179,157,255,.15); color: var(--c-violet); }
+.scene-tile[data-scene="cinema"] .ic   { background: rgba(255,138,155,.15); color: var(--c-rose); }
+.scene-tile[data-scene="wakeup"] .ic   { background: rgba(255,216,74,.15); color: var(--c-amber); }
+.scene-tile[data-scene="leave"] .ic    { background: rgba(125,211,252,.15); color: var(--c-cyan); }
+
+/* =========================================================
+   NOTIFICAÇÕES (lista)
+   ========================================================= */
+.notif-list { display: flex; flex-direction: column; gap: 8px; max-height: 60vh; overflow: auto; }
+.notif-item {
+  display: flex; gap: 12px; padding: 12px 14px;
+  background: var(--glass-2); border: 1px solid var(--glass-stroke);
+  border-radius: var(--r-md);
+}
+.notif-item .ic {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: var(--glass-3); display: grid; place-items: center;
+  flex-shrink: 0; color: var(--c-cyan);
+}
+.notif-item .body { flex: 1; min-width: 0; }
+.notif-item .t { font-weight: 600; font-size: 14px; }
+.notif-item .m { font-size: 12px; color: var(--c-ink-mute); margin-top: 2px; }
+.notif-item .ts { font-size: 11px; color: var(--c-ink-faint); margin-top: 4px; }
+.notif-empty { color: var(--c-ink-mute); text-align: center; padding: 32px 0; }
+
+.dot[hidden] { display: none !important; }
+
+/* =========================================================
+   CONFIRM
+   ========================================================= */
+.confirm-actions { display: flex; gap: 10px; margin-top: 20px; }
+.confirm-actions .btn { flex: 1; padding: 14px; font-size: 15px; }
+.btn--danger {
+  background: var(--c-danger) !important; color: #fff !important;
+  border-color: transparent !important;
+}
+
+/* =========================================================
+   SPARKLINE
+   ========================================================= */
+.sparkline {
+  width: 100%; height: 56px; margin-top: 12px; display: block;
+}
+.sparkline path { fill: none; stroke: var(--c-cyan); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.sparkline .area { fill: var(--c-cyan); opacity: .12; stroke: none; }
+
+/* =========================================================
+   COR INDICADORA (RGB) no card de luz
+   ========================================================= */
+.color-dot {
+  position: absolute; top: 14px; right: 14px;
+  width: 12px; height: 12px; border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.2), 0 0 12px currentColor;
+}
+.room-card, .light-card { position: relative; }
+
+/* =========================================================
+   DRAG / REORDER
+   ========================================================= */
+body.is-editing .home-grid > * {
+  animation: wobble .4s ease-in-out infinite alternate;
+  cursor: grab;
+}
+body.is-editing .home-grid > .is-dragging {
+  animation: none; cursor: grabbing;
+  opacity: .6; transform: scale(1.02);
+  z-index: 50;
+}
+@keyframes wobble {
+  from { transform: rotate(-.5deg); }
+  to   { transform: rotate(.5deg); }
+}
+.edit-banner {
+  position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+  z-index: 80;
+  background: var(--c-lime); color: #0a0c0f;
+  padding: 10px 18px; border-radius: var(--r-pill);
+  font-weight: 700; font-size: 13px;
+  box-shadow: 0 10px 30px -8px rgba(214,255,77,.5);
+  cursor: pointer;
+  display: none;
+}
+body.is-editing .edit-banner { display: block; }
+
+/* tablet hint */
+.tip { color: var(--c-ink-mute); font-size: 12px; margin-top: 8px; }

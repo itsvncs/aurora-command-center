@@ -1037,3 +1037,499 @@ document.addEventListener("click", (e) => {
   if (domain === "light" || domain === "switch") openLightModal(id);
   else if (domain === "media_player") openMediaModal(id);
 });
+
+/* =========================================================
+   HAPTICS
+   ========================================================= */
+function haptic(ms = 10) {
+  try { navigator.vibrate?.(ms); } catch {}
+}
+
+/* =========================================================
+   CENAS GLOBAIS
+   ========================================================= */
+const SCENES = [
+  {
+    id: "goodnight", name: "Boa noite",
+    sub: "Apaga tudo, ativa ruído branco e modo noturno",
+    icon: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
+    run: async () => {
+      const allLights = Object.values(ENTITY_MAP.groups);
+      await Promise.allSettled(allLights.map((id) => callService(id.split(".")[0], "turn_off", {}, { entity_id: id })));
+      await callService("script", "turn_on", { entity_id: ENTITY_MAP.scripts.noiseOn }).catch(() => {});
+      applyTheme("night");
+    },
+  },
+  {
+    id: "cinema", name: "Cinema",
+    sub: "Sala 20%, demais apagadas, modo escuro",
+    icon: '<rect x="2" y="6" width="20" height="12" rx="2"/><path d="M8 22h8M12 18v4"/>',
+    run: async () => {
+      await Promise.allSettled([
+        callService("light", "turn_on", { brightness_pct: 20, kelvin: 2200 }, { entity_id: ENTITY_MAP.groups.sala }),
+        callService("light", "turn_off", {}, { entity_id: ENTITY_MAP.groups.cozinha }),
+        callService("light", "turn_off", {}, { entity_id: ENTITY_MAP.groups.servicos }),
+      ]);
+      applyTheme("dark");
+    },
+  },
+  {
+    id: "wakeup", name: "Acordar",
+    sub: "Suite e quarto Esther em luz quente",
+    icon: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/>',
+    run: async () => {
+      await Promise.allSettled([
+        callService("light", "turn_on", { brightness_pct: 60, kelvin: 2700 }, { entity_id: ENTITY_MAP.groups.suite }),
+        callService("light", "turn_on", { brightness_pct: 40, kelvin: 2700 }, { entity_id: ENTITY_MAP.groups.esther }),
+      ]);
+      applyTheme("normal");
+    },
+  },
+  {
+    id: "leave", name: "Sair de casa",
+    sub: "Apaga tudo e arma o alarme",
+    icon: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
+    confirm: { title: "Sair de casa", message: "Vai apagar todas as luzes e armar o alarme. Confirma?" },
+    run: async () => {
+      const allLights = Object.values(ENTITY_MAP.groups);
+      await Promise.allSettled(allLights.map((id) => callService(id.split(".")[0], "turn_off", {}, { entity_id: id })));
+      await callService("alarm_control_panel", "alarm_arm_away", {}, { entity_id: ENTITY_MAP.security.alarm }).catch(() => {});
+    },
+  },
+];
+
+function openScenesModal() {
+  openModal(`
+    <div class="modal__head">
+      <div>
+        <h2 class="modal__title">Cenas</h2>
+        <div class="modal__sub">Atalhos para a casa toda</div>
+      </div>
+      <button class="modal__close" data-modal-close aria-label="Fechar">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="scenes-grid">
+      ${SCENES.map((s) => `
+        <button class="scene-tile" data-scene="${s.id}">
+          <div class="ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${s.icon}</svg></div>
+          <div>
+            <div class="nm">${s.name}</div>
+            <div class="sb">${s.sub}</div>
+          </div>
+        </button>
+      `).join("")}
+    </div>
+  `);
+  sheetEl.querySelectorAll("[data-scene]").forEach((tile) => {
+    tile.onclick = async () => {
+      const scene = SCENES.find((s) => s.id === tile.dataset.scene);
+      if (!scene) return;
+      haptic(15);
+      const exec = async () => {
+        try { await scene.run(); closeModal(); }
+        catch (err) { console.error(err); }
+      };
+      if (scene.confirm) openConfirm(scene.confirm.title, scene.confirm.message, exec);
+      else await exec();
+    };
+  });
+}
+document.getElementById("scenesBtn")?.addEventListener("click", () => { haptic(8); openScenesModal(); });
+
+/* =========================================================
+   CONFIRMAÇÃO (alarme / porta / sair)
+   ========================================================= */
+function openConfirm(title, message, onConfirm) {
+  openModal(`
+    <div class="modal__head">
+      <div>
+        <h2 class="modal__title">${title}</h2>
+        <div class="modal__sub">${message}</div>
+      </div>
+    </div>
+    <div class="confirm-actions">
+      <button class="btn" data-modal-close>Cancelar</button>
+      <button class="btn btn--danger" id="confirmYes">Confirmar</button>
+    </div>
+  `);
+  sheetEl.querySelector("#confirmYes")?.addEventListener("click", async () => {
+    haptic(20);
+    closeModal();
+    try { await onConfirm(); } catch (err) { console.error(err); }
+  });
+}
+
+// Intercepta clique no card do alarme (security)
+document.addEventListener("click", (e) => {
+  const card = e.target.closest(`[data-entity="${ENTITY_MAP.security.alarm}"]`);
+  if (!card || e.target.closest(".modal__sheet")) return;
+  e.stopPropagation();
+  const armed = entityState(ENTITY_MAP.security.alarm) === "armed_away";
+  openConfirm(
+    armed ? "Desarmar alarme" : "Armar alarme",
+    armed ? "Tem certeza que quer desarmar?" : "Confirma armar o alarme em modo ausente?",
+    async () => {
+      await callService("alarm_control_panel", armed ? "alarm_disarm" : "alarm_arm_away", {}, { entity_id: ENTITY_MAP.security.alarm });
+    }
+  );
+}, true);
+
+/* =========================================================
+   NOTIFICAÇÕES (logbook)
+   ========================================================= */
+const NOTIF_ENTITIES = [
+  ENTITY_MAP.security.door,
+  ENTITY_MAP.security.alarm,
+  ENTITY_MAP.baby.occupied,
+  ENTITY_MAP.baby.face,
+];
+let lastNotifSeen = Number(localStorage.getItem("auroraNotifSeen") || 0);
+
+async function fetchNotifications() {
+  try {
+    const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+    const path = `/api/logbook/${encodeURIComponent(since)}?entity=${NOTIF_ENTITIES.join(",")}`;
+    const data = await haFetch(path);
+    return Array.isArray(data) ? data.slice(-30).reverse() : [];
+  } catch { return []; }
+}
+
+function notifIcon(entity_id = "") {
+  if (entity_id.startsWith("alarm")) return '<path d="M12 2 4 5v6c0 5 3.5 9 8 11 4.5-2 8-6 8-11V5l-8-3z"/>';
+  if (entity_id.includes("porta")) return '<rect x="6" y="3" width="12" height="18" rx="1"/><circle cx="15" cy="12" r="1"/>';
+  if (entity_id.includes("berco")) return '<circle cx="12" cy="9" r="4"/><path d="M5 21c1-4 5-6 7-6s6 2 7 6"/>';
+  return '<circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>';
+}
+
+async function openNotifModal() {
+  openModal(`
+    <div class="modal__head">
+      <div>
+        <h2 class="modal__title">Notificações</h2>
+        <div class="modal__sub">Últimas 24h</div>
+      </div>
+      <button class="modal__close" data-modal-close aria-label="Fechar">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="notif-list" id="notifList"><div class="notif-empty">Carregando…</div></div>
+  `);
+  const list = sheetEl.querySelector("#notifList");
+  const items = await fetchNotifications();
+  if (!items.length) { list.innerHTML = `<div class="notif-empty">Sem eventos recentes</div>`; }
+  else {
+    list.innerHTML = items.map((it) => {
+      const when = it.when ? new Date(it.when) : null;
+      const ts = when ? when.toLocaleString("pt-BR", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" }) : "";
+      return `
+        <div class="notif-item">
+          <div class="ic"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${notifIcon(it.entity_id || "")}</svg></div>
+          <div class="body">
+            <div class="t">${it.name || it.entity_id || "Evento"}</div>
+            <div class="m">${it.message || it.state || ""}</div>
+            <div class="ts">${ts}</div>
+          </div>
+        </div>`;
+    }).join("");
+  }
+  // marca visto
+  lastNotifSeen = Date.now();
+  localStorage.setItem("auroraNotifSeen", String(lastNotifSeen));
+  document.getElementById("notifDot")?.setAttribute("hidden", "");
+}
+document.getElementById("notifBtn")?.addEventListener("click", () => { haptic(8); openNotifModal(); });
+
+function bumpNotifDot() {
+  document.getElementById("notifDot")?.removeAttribute("hidden");
+}
+
+/* =========================================================
+   FAB BABYTRACKER
+   ========================================================= */
+const fabBaby = document.getElementById("fabBaby");
+const fabPulse = document.getElementById("fabPulse");
+fabBaby?.addEventListener("click", () => { haptic(10); go("baby"); });
+
+function updateFab() {
+  if (!fabBaby) return;
+  if (state.route === "baby") fabBaby.setAttribute("hidden", "");
+  else fabBaby.removeAttribute("hidden");
+  if (isOn(ENTITY_MAP.baby.occupied)) fabPulse?.removeAttribute("hidden");
+  else fabPulse?.setAttribute("hidden", "");
+}
+
+/* =========================================================
+   SPARKLINE no Clima — history API
+   ========================================================= */
+async function fetchHistory(entity_id, hours = 12) {
+  try {
+    const start = new Date(Date.now() - hours * 3600 * 1000).toISOString();
+    const data = await haFetch(`/api/history/period/${encodeURIComponent(start)}?filter_entity_id=${entity_id}&minimal_response=true`);
+    if (!Array.isArray(data) || !data[0]) return [];
+    return data[0].map((p) => parseFloat(p.state)).filter((v) => Number.isFinite(v));
+  } catch { return []; }
+}
+
+function sparklineSvg(values) {
+  if (!values.length) return "";
+  const w = 320, h = 56, pad = 4;
+  const min = Math.min(...values), max = Math.max(...values);
+  const span = (max - min) || 1;
+  const step = (w - pad * 2) / Math.max(1, values.length - 1);
+  const pts = values.map((v, i) => {
+    const x = pad + i * step;
+    const y = pad + (h - pad * 2) * (1 - (v - min) / span);
+    return [x, y];
+  });
+  const line = pts.map(([x, y], i) => `${i === 0 ? "M" : "L"}${x.toFixed(1)} ${y.toFixed(1)}`).join(" ");
+  const area = `${line} L${pts[pts.length-1][0].toFixed(1)} ${h} L${pts[0][0].toFixed(1)} ${h} Z`;
+  return `<svg class="sparkline" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+    <path class="area" d="${area}"/>
+    <path d="${line}"/>
+  </svg>`;
+}
+
+async function injectClimateSparklines() {
+  if (state.route !== "climate") return;
+  const cards = view.querySelectorAll(".stat-card");
+  if (!cards.length) return;
+  const [tempVals, humVals] = await Promise.all([
+    fetchHistory(ENTITY_MAP.climate.temp, 12),
+    fetchHistory(ENTITY_MAP.climate.humidity, 12),
+  ]);
+  if (humVals.length && cards[0]) cards[0].insertAdjacentHTML("beforeend", sparklineSvg(humVals));
+  if (tempVals.length && cards[1]) cards[1].insertAdjacentHTML("beforeend", sparklineSvg(tempVals));
+}
+
+/* =========================================================
+   SCREENSAVER + AUTO-NIGHT
+   ========================================================= */
+const SS_TIMEOUT = 3 * 60 * 1000; // 3 min
+const ssEl = document.getElementById("screensaver");
+const ssTime = document.getElementById("ssTime");
+const ssDate = document.getElementById("ssDate");
+const ssTemp = document.getElementById("ssTemp");
+const ssBaby = document.getElementById("ssBaby");
+let ssTimer = null;
+
+function paintScreensaver() {
+  const now = new Date();
+  if (ssTime) ssTime.textContent = now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  if (ssDate) ssDate.textContent = now.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
+  if (ssTemp) ssTemp.textContent = `${num(ENTITY_MAP.climate.temp, 0).toFixed(0)}°`;
+  if (ssBaby) ssBaby.textContent = isOn(ENTITY_MAP.baby.occupied) ? "Berço ocupado" : "Berço livre";
+}
+let ssPaintTimer = null;
+function showScreensaver() {
+  if (!ssEl || ssEl.classList.contains("is-on")) return;
+  paintScreensaver();
+  ssEl.classList.add("is-on");
+  ssEl.setAttribute("aria-hidden", "false");
+  clearInterval(ssPaintTimer);
+  ssPaintTimer = setInterval(paintScreensaver, 15000);
+}
+function hideScreensaver() {
+  if (!ssEl) return;
+  ssEl.classList.remove("is-on");
+  ssEl.setAttribute("aria-hidden", "true");
+  clearInterval(ssPaintTimer);
+  ssPaintTimer = null;
+}
+function resetSsTimer() {
+  clearTimeout(ssTimer);
+  ssTimer = setTimeout(showScreensaver, SS_TIMEOUT);
+}
+ssEl?.addEventListener("click", () => { hideScreensaver(); resetSsTimer(); });
+["pointerdown", "keydown", "wheel"].forEach((ev) =>
+  document.addEventListener(ev, () => { if (ssEl?.classList.contains("is-on")) hideScreensaver(); resetSsTimer(); })
+);
+resetSsTimer();
+
+// Auto-night entre 22h e 06h (apenas se usuário não trocou manualmente nos últimos 30min)
+let lastManualThemeChange = 0;
+document.getElementById("themeBtn")?.addEventListener("click", () => { lastManualThemeChange = Date.now(); });
+function autoTheme() {
+  if (Date.now() - lastManualThemeChange < 30 * 60 * 1000) return;
+  const h = new Date().getHours();
+  const desired = (h >= 22 || h < 6) ? "night" : "normal";
+  if (document.body.dataset.theme !== desired) applyTheme(desired);
+}
+setInterval(autoTheme, 5 * 60 * 1000);
+
+/* =========================================================
+   PERFORMANCE — pause WS quando aba oculta + double-buffer câmera
+   ========================================================= */
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    stopCameraFeeds();
+    try { state.ws?.close(); } catch {}
+  } else {
+    if (state.token) connectWebSocket();
+    startCameraFeeds();
+  }
+});
+
+// Double buffer da câmera: substitui refreshCameraFeed por versão sem flicker
+const _origRefresh = refreshCameraFeed;
+refreshCameraFeed = async function (img) {
+  if (!img?.dataset?.cameraFeed) return;
+  try {
+    const url = await fetchCameraFrame(img.dataset.cameraFeed);
+    if (!url) return;
+    const buf = new Image();
+    buf.onload = () => { img.src = url; };
+    buf.onerror = () => { img.src = url; };
+    buf.src = url;
+  } catch {}
+};
+
+/* =========================================================
+   POLIMENTO VISUAL — bolinha de cor RGB nos cards de luz
+   ========================================================= */
+const _origPatchEntityUI = patchEntityUI;
+patchEntityUI = function (id) {
+  _origPatchEntityUI(id);
+  if (!id.startsWith("light.")) return;
+  const e = entity(id);
+  const rgb = e?.attributes?.rgb_color;
+  document.querySelectorAll(`[data-entity="${id}"]`).forEach((card) => {
+    let dot = card.querySelector(".color-dot");
+    if (rgb && isOn(id)) {
+      if (!dot) {
+        dot = document.createElement("span");
+        dot.className = "color-dot";
+        card.appendChild(dot);
+      }
+      dot.style.color = `rgb(${rgb.join(",")})`;
+      dot.style.background = `rgb(${rgb.join(",")})`;
+    } else if (dot) dot.remove();
+  });
+};
+
+/* =========================================================
+   LONG-PRESS REORDENAR (home)
+   ========================================================= */
+const ORDER_KEY = "auroraHomeOrder";
+function applySavedOrder() {
+  if (state.route !== "home") return;
+  const grid = view.querySelector(".home-grid");
+  if (!grid) return;
+  const order = JSON.parse(localStorage.getItem(ORDER_KEY) || "null");
+  if (!Array.isArray(order)) return;
+  const map = new Map();
+  Array.from(grid.children).forEach((el, i) => {
+    const key = el.dataset.entity || `idx-${i}`;
+    map.set(key, el);
+  });
+  order.forEach((key) => { const el = map.get(key); if (el) grid.appendChild(el); });
+  // os que sobraram já estão no fim
+}
+function saveOrder() {
+  const grid = view.querySelector(".home-grid");
+  if (!grid) return;
+  const order = Array.from(grid.children).map((el, i) => el.dataset.entity || `idx-${i}`);
+  localStorage.setItem(ORDER_KEY, JSON.stringify(order));
+}
+
+function enableEdit() {
+  if (state.route !== "home") return;
+  document.body.classList.add("is-editing");
+  haptic(25);
+  const grid = view.querySelector(".home-grid");
+  if (!grid) return;
+  Array.from(grid.children).forEach((el) => { el.draggable = true; });
+  let dragEl = null;
+  grid.addEventListener("dragstart", (e) => {
+    dragEl = e.target.closest(".home-grid > *");
+    dragEl?.classList.add("is-dragging");
+    e.dataTransfer.effectAllowed = "move";
+  });
+  grid.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    const target = e.target.closest(".home-grid > *");
+    if (!target || target === dragEl) return;
+    const rect = target.getBoundingClientRect();
+    const after = (e.clientY - rect.top) / rect.height > 0.5;
+    target.parentNode.insertBefore(dragEl, after ? target.nextSibling : target);
+  });
+  grid.addEventListener("dragend", () => {
+    dragEl?.classList.remove("is-dragging");
+    saveOrder();
+  });
+}
+function disableEdit() {
+  document.body.classList.remove("is-editing");
+  const grid = view.querySelector(".home-grid");
+  if (!grid) return;
+  Array.from(grid.children).forEach((el) => { el.draggable = false; });
+}
+
+// banner para sair do modo edição
+const editBanner = document.createElement("div");
+editBanner.className = "edit-banner";
+editBanner.textContent = "Concluir edição";
+editBanner.onclick = disableEdit;
+document.body.appendChild(editBanner);
+
+// long-press no card da home para entrar em edição
+let lpTimer = null;
+view.addEventListener("pointerdown", (e) => {
+  if (state.route !== "home") return;
+  if (document.body.classList.contains("is-editing")) return;
+  if (!e.target.closest(".home-grid > *")) return;
+  if (e.target.closest("[data-toggle], button, [data-home-camera]")) return;
+  lpTimer = setTimeout(enableEdit, 600);
+});
+["pointerup", "pointermove", "pointercancel"].forEach((ev) =>
+  view.addEventListener(ev, () => { clearTimeout(lpTimer); })
+);
+
+/* =========================================================
+   HOOKS — render() extras + haptics nos toggles
+   ========================================================= */
+const _origRender = render;
+render = function () {
+  _origRender();
+  applySavedOrder();
+  updateFab();
+  if (state.route === "climate") injectClimateSparklines();
+};
+const _origToggleEntity = toggleEntity;
+toggleEntity = async function (id) {
+  haptic(8);
+  return _origToggleEntity(id);
+};
+
+/* WS hook para notif dot + FAB pulse */
+const wsObserver = new MutationObserver(() => {});
+const _origConnect = connectWebSocket;
+connectWebSocket = function () {
+  _origConnect();
+  const ws = state.ws;
+  if (!ws) return;
+  const _orig = ws.onmessage;
+  ws.onmessage = (event) => {
+    _orig?.(event);
+    try {
+      const msg = JSON.parse(event.data);
+      if (msg.type === "event" && msg.event?.data?.entity_id) {
+        const id = msg.event.data.entity_id;
+        if (NOTIF_ENTITIES.includes(id)) bumpNotifDot();
+        if (id === ENTITY_MAP.baby.occupied) updateFab();
+      }
+    } catch {}
+  };
+};
+
+/* primeiro paint de FAB e auto-tema após bootstrap */
+setTimeout(() => { updateFab(); autoTheme(); }, 800);
+
+/* =========================================================
+   SERVICE WORKER
+   ========================================================= */
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/dashboard/sw.js").catch(() => {});
+  });
+}
