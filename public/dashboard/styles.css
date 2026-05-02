@@ -715,8 +715,9 @@ img, svg { display: block; max-width: 100%; }
 }
 
 .baby-card {
-  display: grid; gap: 14px;
-  min-height: 200px;
+  display: grid; gap: 10px;
+  min-height: 160px;
+  padding: 16px;
 }
 .baby-card .head { display: flex; justify-content: space-between; align-items: center; }
 .baby-card .ttl { font-family: var(--f-display); font-size: 14px; font-weight: 600; color: var(--c-ink); letter-spacing: 0; text-transform: none; }
