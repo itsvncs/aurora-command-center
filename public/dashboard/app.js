@@ -1,637 +1,1039 @@
-// =========================================================
-// Casa · Home Assistant Dashboard — app.js
-// HTML/CSS/JS puro · Pronto para integração HA via REST/WS
-// =========================================================
+const ROUTES = ["home", "lights", "climate", "security", "media", "baby"];
 
-// ---------- Mock state (substituir por HA WS/REST) ----------
-const state = {
-  greeting: { name: "Wendell", line: "Sua casa está tranquila — 22°C, tudo seguro." },
-  weather: { temp: 24, desc: "Parcialmente nublado", city: "São Paulo" },
-  rooms: [
-    { id: "sala",      name: "Sala",          devices: 6, on: true,  temp: 23 },
-    { id: "cozinha",   name: "Cozinha",       devices: 4, on: false, temp: 24 },
-    { id: "servicos",  name: "Serviços",      devices: 2, on: false, temp: 25 },
-    { id: "esther",    name: "Quarto Esther", devices: 5, on: true,  temp: 22 },
-    { id: "suite",     name: "Suíte",         devices: 7, on: false, temp: 22 },
-  ],
-  lights: [
-    { entity: "light.sala_teto",     name: "Teto Sala",       room: "Sala",    on: true,  bri: 70 },
-    { entity: "light.sala_lustre",   name: "Lustre",          room: "Sala",    on: false, bri: 0  },
-    { entity: "light.cozinha_teto",  name: "Teto Cozinha",    room: "Cozinha", on: false, bri: 0  },
-    { entity: "light.servicos_teto", name: "Teto Serviços",   room: "Serviços",on: false, bri: 0  },
-    { entity: "light.teto",          name: "Teto Esther",     room: "Esther",  on: true,  bri: 35 },
-    { entity: "light.led_esther",    name: "LED Esther",      room: "Esther",  on: true,  bri: 60 },
-    { entity: "light.suite_teto",    name: "Teto Suíte",      room: "Suíte",   on: false, bri: 0  },
-    { entity: "light.suite_abajur",  name: "Abajur Suíte",    room: "Suíte",   on: true,  bri: 25 },
-  ],
-  climate: { indoor: 22.4, comp: 22.0, humidity: 56, comfort: "Ótimo" },
-  security: { door: "fechada", presence: "ninguém", alerts: 0, cameras: 4 },
-  media: { now: "Berceuse Lullaby", artist: "Calm Kids", playing: true, vol: 32 },
+const ENTITY_MAP = {
+  weather: "weather.casa",
+  houseMode: "input_select.house",
+  groups: {
+    sala: "light.sala_4",
+    cozinha: "light.cozinha",
+    servicos: "light.servicos",
+    esther: "light.quarto_esther",
+    suite: "light.suite",
+  },
+  lights: {
+    sala: [
+      { id: "switch.cozylife_a50d", name: "Mesa", subtitle: "Sala" },
+      { id: "switch.sofa_interruptor_1", name: "Sofá", subtitle: "Sala" },
+      { id: "light.sala_4", name: "Sala", subtitle: "Grupo" },
+    ],
+    cozinha: [
+      { id: "switch.cozylife_57cb", name: "Pia", subtitle: "Cozinha" },
+      { id: "switch.balcao_interruptor_1", name: "Balcão", subtitle: "Cozinha" },
+      { id: "light.cozinha", name: "Cozinha", subtitle: "Grupo" },
+      { id: "light.lavanderialocal", name: "Lavanderia", subtitle: "Cozinha" },
+    ],
+    servicos: [
+      { id: "switch.hall_interruptor_1", name: "Lavabo", subtitle: "Serviços" },
+      { id: "light.sacadalocal", name: "Sacada", subtitle: "Serviços" },
+      { id: "light.churrasqueiralocal", name: "Churrasqueira", subtitle: "Serviços" },
+      { id: "light.porta", name: "Porta", subtitle: "Serviços" },
+    ],
+    esther: [
+      { id: "light.teto", name: "Teto", subtitle: "Esther" },
+      { id: "switch.cozylife_66c5", name: "Led Esther", subtitle: "Esther" },
+      { id: "switch.aquecedor_interruptor_1", name: "Aquecedor", subtitle: "Esther" },
+    ],
+    suite: [
+      { id: "switch.cozylife_7cf5", name: "Hall", subtitle: "Suite" },
+      { id: "switch.quarto_interruptor_1", name: "Quarto", subtitle: "Suite" },
+      { id: "switch.t34_minitong_duan_qi_interruptor_1", name: "Cama", subtitle: "Suite" },
+      { id: "switch.cozylife_94d7", name: "Banheiro", subtitle: "Suite" },
+      { id: "switch.cozylife_74ef", name: "Espelho", subtitle: "Suite" },
+    ],
+  },
+  security: {
+    door: "binary_sensor.portaentrada",
+    alarm: "alarm_control_panel.ezviz_alarm",
+  },
+  climate: {
+    temp: "sensor.casa_temperatura",
+    humidity: "sensor.casa_umidade",
+    estherTemp: "sensor.wifiwen_shi_du_ji_temperatura",
+    compensated: "sensor.temperatura_compensada",
+  },
+  media: {
+    tv: "media_player.tv_da_sala_de_estar",
+    firetv: "media_player.fire_tv",
+    echoSala: "media_player.echo_pop_de_vinicius",
+    echoQuarto: "media_player.echo_quarto",
+    tablet: "media_player.tablet",
+  },
   baby: {
-    occupied: true,
-    lastFace: { name: "Esther", at: "21:14" },
-    temp: 22.4,
-    tempComp: 22.1,
-    humidity: 58,
-    whiteNoise: true,
-    echo: { state: "playing", track: "Berceuse Lullaby", artist: "Calm Kids" },
-    light_teto: true,
-    light_led: true,
-    aquecedor: false,
-    cameraLive: true,
+    occupied: "binary_sensor.berco_ocupado_confiavel",
+    face: "sensor.berco_ultima_face_reconhecida",
+    temp: "sensor.wifiwen_shi_du_ji_temperatura",
+    compensated: "sensor.temperatura_compensada",
+    noise: "input_boolean.ruido_branco",
+    media: "media_player.echo_quarto",
+    teto: "light.teto",
+    led: "switch.cozylife_66c5",
+    heater: "switch.aquecedor_interruptor_1",
+    camera: "camera.berco_2",
+  },
+  scripts: {
+    noiseOn: "script.ligar_ruido_branco_esther",
+    noiseOff: "script.desligar_ruido_branco_esther",
   },
 };
 
-// ---------- HA bridge (integração com Home Assistant) ----------
-// Configure aqui a URL e o token de longa duração do seu HA.
-// Tokens devem ser gerados em: Home Assistant → Perfil → Tokens de acesso de longa duração.
-const HA_CONFIG = {
-  baseUrl: window.HA_BASE_URL || "",        // ex.: "https://homeassistant.local:8123"
-  token:   window.HA_TOKEN    || "",        // ex.: "eyJ0eXAiOiJK..."
-  wsUrl:   window.HA_WS_URL   || "",        // ex.: "wss://homeassistant.local:8123/api/websocket"
-  cameras: {
-    // mapeie aqui os entity_id das câmeras para uso no dashboard
-    berco:    "camera.berco_2",
-    entrada:  "camera.entrada",
-    sala:     "camera.sala",
-    garagem:  "camera.garagem",
-  },
+const HOME_CAMERAS = [
+  { id: "camera.quarto_esther_2", label: "Quarto Esther" },
+  { id: "camera.sala_2", label: "Sala" },
+  { id: "camera.cozinha_2", label: "Cozinha" },
+  { id: "camera.suite", label: "Suite" },
+];
+
+const DISPLAY_NAMES = {
+  "light.sala_4": "Sala",
+  "light.cozinha": "Cozinha",
+  "light.servicos": "Serviços",
+  "light.quarto_esther": "Quarto Esther",
+  "light.suite": "Suite",
+  "switch.cozylife_a50d": "Mesa",
+  "switch.sofa_interruptor_1": "Sofá",
+  "switch.cozylife_57cb": "Pia",
+  "switch.balcao_interruptor_1": "Balcão",
+  "light.lavanderialocal": "Lavanderia",
+  "switch.hall_interruptor_1": "Lavabo",
+  "light.sacadalocal": "Sacada",
+  "light.churrasqueiralocal": "Churrasqueira",
+  "light.porta": "Porta",
+  "light.teto": "Teto",
+  "switch.cozylife_66c5": "Led Esther",
+  "switch.aquecedor_interruptor_1": "Aquecedor",
+  "switch.cozylife_7cf5": "Hall",
+  "switch.quarto_interruptor_1": "Quarto",
+  "switch.t34_minitong_duan_qi_interruptor_1": "Cama",
+  "switch.cozylife_94d7": "Banheiro",
+  "switch.cozylife_74ef": "Espelho",
+  "media_player.tv_da_sala_de_estar": "TV da Sala",
+  "media_player.fire_tv": "Fire TV",
+  "media_player.echo_pop_de_vinicius": "Echo Sala",
+  "media_player.echo_quarto": "Echo Quarto",
+  "media_player.tablet": "Tablet",
+  "camera.berco_2": "Berço",
+  "camera.quarto_esther_2": "Quarto Esther",
+  "camera.sala_2": "Sala",
+  "camera.cozinha_2": "Cozinha",
+  "camera.suite": "Suite",
 };
 
-const HA = {
-  config: HA_CONFIG,
+const state = {
+  route: "home",
+  entities: {},
+  token: null,
+  error: null,
+  connected: false,
+  query: "",
+  activeHomeCamera: "camera.quarto_esther_2",
+  ws: null,
+  cameraTimers: new Map(),
+  cameraUrls: new Map(),
+};
 
-  // Leitura de estado: GET /api/states/{entity_id}
-  async getState(entity) {
-    if (!HA_CONFIG.baseUrl || !HA_CONFIG.token) return null;
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => Array.from(el.querySelectorAll(s));
+const view = $("#view");
+const pageTitle = $("#pageTitle");
+const pageSub = $("#pageSub");
+const wxTemp = $("#wxTemp");
+const wxLocation = $("#wxLocation");
+const wxIcon = $("#wxIcon");
+const searchInput = $("#searchInput");
+
+const titleMap = {
+  home: ["Casa", "Visão geral da casa em tempo real."],
+  lights: ["Luzes", "Controles individuais por cômodo."],
+  climate: ["Clima", "Temperatura, umidade e conforto térmico."],
+  security: ["Segurança", "Porta, alarme e status da casa."],
+  media: ["Mídia", "Players e reprodução da casa."],
+  baby: ["Babytracker", "Monitoramento do quarto da Esther."],
+};
+
+function parseToken() {
+  const keys = ["auroraHaToken", "hassTokens", `hassTokens-${location.host}`];
+  for (const key of keys) {
     try {
-      const r = await fetch(`${HA_CONFIG.baseUrl}/api/states/${entity}`, {
-        headers: { Authorization: `Bearer ${HA_CONFIG.token}` },
-      });
-      return r.ok ? r.json() : null;
-    } catch (e) { console.warn("[HA] getState fail", e); return null; }
-  },
+      const raw = localStorage.getItem(key) || window.parent?.localStorage?.getItem(key);
+      if (!raw) continue;
+      if (key === "auroraHaToken") return raw.trim();
+      const parsed = JSON.parse(raw);
+      const candidates = [
+        parsed?.access_token,
+        parsed?.token?.access_token,
+        parsed?.data?.access_token,
+        parsed?.auth?.access_token,
+      ].filter(Boolean);
+      if (candidates.length) return candidates[0];
+    } catch {}
+  }
+  return null;
+}
 
-  // Chamada de serviço: POST /api/services/{domain}/{service}
-  async callService(domain, service, data = {}) {
-    console.log("[HA] callService", domain, service, data);
-    if (!HA_CONFIG.baseUrl || !HA_CONFIG.token) return;
-    try {
-      await fetch(`${HA_CONFIG.baseUrl}/api/services/${domain}/${service}`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${HA_CONFIG.token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-    } catch (e) { console.warn("[HA] callService fail", e); }
-  },
+async function haFetch(path, options = {}) {
+  const token = state.token || parseToken();
+  if (!token) throw new Error("Token do Home Assistant não encontrado.");
+  state.token = token;
+  const headers = new Headers(options.headers || {});
+  headers.set("Authorization", `Bearer ${token}`);
+  if (options.body && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
+  const res = await fetch(path, { ...options, headers });
+  if (!res.ok) throw new Error(`HA ${res.status} em ${path}`);
+  if (res.status === 204) return null;
+  return res.json();
+}
 
-  // Subscribe a eventos via WebSocket (state_changed)
-  // Use HA.subscribe("light.sala_teto", state => { ... })
-  _ws: null, _subs: new Map(), _id: 1,
-  subscribe(entity, cb) {
-    if (!HA_CONFIG.wsUrl || !HA_CONFIG.token) return;
-    if (!this._ws) this._connectWS();
-    this._subs.set(entity, cb);
-  },
-  _connectWS() {
-    try {
-      const ws = new WebSocket(HA_CONFIG.wsUrl);
-      this._ws = ws;
-      ws.onmessage = (msg) => {
-        const data = JSON.parse(msg.data);
-        if (data.type === "auth_required") {
-          ws.send(JSON.stringify({ type: "auth", access_token: HA_CONFIG.token }));
-        } else if (data.type === "auth_ok") {
-          ws.send(JSON.stringify({ id: this._id++, type: "subscribe_events", event_type: "state_changed" }));
-        } else if (data.type === "event" && data.event?.event_type === "state_changed") {
-          const ent = data.event.data.entity_id;
-          const cb = this._subs.get(ent);
-          if (cb) cb(data.event.data.new_state);
-        }
-      };
-      ws.onclose = () => { this._ws = null; setTimeout(() => this._connectWS(), 3000); };
-    } catch (e) { console.warn("[HA] WS fail", e); }
-  },
+async function loadStates() {
+  const states = await haFetch("/api/states");
+  state.entities = Object.fromEntries(states.map((item) => [item.entity_id, item]));
+  state.connected = true;
+  state.error = null;
+}
 
-  // URL de stream MJPEG / snapshot de câmera
-  cameraStream(entity) {
-    return HA_CONFIG.baseUrl
-      ? `${HA_CONFIG.baseUrl}/api/camera_proxy_stream/${entity}?token=${HA_CONFIG.token}`
-      : "";
-  },
-  cameraSnapshot(entity) {
-    return HA_CONFIG.baseUrl
-      ? `${HA_CONFIG.baseUrl}/api/camera_proxy/${entity}?token=${HA_CONFIG.token}`
-      : "";
-  },
-};
-
-// ---------- Util ----------
-const $  = (s, r=document) => r.querySelector(s);
-const $$ = (s, r=document) => [...r.querySelectorAll(s)];
-const html = (strings, ...v) => strings.map((s,i)=>s+(v[i] ?? "")).join("");
-
-// ---------- Router ----------
-const ROUTES = {
-  home:     { title: "Boa noite, Wendell", sub: "Sua casa está tranquila — 22°C, tudo seguro.",   render: renderHome },
-  lights:   { title: "Iluminação",         sub: "Controle todas as luzes e tomadas por cômodo.",   render: renderLights },
-  climate:  { title: "Clima",              sub: "Conforto térmico e umidade da casa.",             render: renderClimate },
-  security: { title: "Segurança",          sub: "Câmeras, presença e alertas em tempo real.",      render: renderSecurity },
-  media:    { title: "Mídia",              sub: "TV, Echo e players controlados em um só lugar.",  render: renderMedia },
-  baby:     { title: "Quarto da Esther",   sub: "Monitoramento ao vivo e ambiente do quarto.",     render: renderBaby },
-};
-
-function go(route) {
-  const r = ROUTES[route]; if (!r) return;
-  $$("#nav .nav-item").forEach(n => n.classList.toggle("is-active", n.dataset.route === route));
-  $("#pageTitle").textContent = r.title;
-  $("#pageSub").textContent = r.sub;
-  const view = $("#view");
-  view.style.opacity = "0";
-  view.style.transform = "translateY(8px)";
-  requestAnimationFrame(() => {
-    setTimeout(() => {
-      view.innerHTML = r.render();
-      view.style.transition = "opacity .4s var(--ease-out), transform .4s var(--ease-out)";
-      view.style.opacity = "1";
-      view.style.transform = "translateY(0)";
-      bindView(route);
-    }, 120);
+async function callService(domain, service, serviceData = {}, target) {
+  const body = { ...serviceData };
+  if (target?.entity_id) body.entity_id = target.entity_id;
+  return haFetch(`/api/services/${domain}/${service}`, {
+    method: "POST",
+    body: JSON.stringify(body),
   });
 }
 
-document.addEventListener("click", (e) => {
-  const nav = e.target.closest("[data-route]");
-  if (nav) go(nav.dataset.route);
-});
+function entity(id) {
+  return state.entities[id] || null;
+}
 
-// ---------- VIEWS ----------
+function entityState(id, fallback = "unavailable") {
+  return entity(id)?.state ?? fallback;
+}
+
+function isOn(id) {
+  return ["on", "playing", "home", "open"].includes(entityState(id));
+}
+
+function friendly(id, fallback = id) {
+  return DISPLAY_NAMES[id] || entity(id)?.attributes?.friendly_name || fallback;
+}
+
+function num(id, fallback = 0) {
+  const value = parseFloat(entityState(id));
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function brightnessPct(id) {
+  const attrs = entity(id)?.attributes || {};
+  if (typeof attrs.brightness_pct === "number") return Math.round(attrs.brightness_pct);
+  if (typeof attrs.brightness === "number") return Math.round((attrs.brightness / 255) * 100);
+  return null;
+}
+
+function normalizeText(value) {
+  return (value || "").toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+function matchesQuery(...parts) {
+  if (!state.query) return true;
+  return normalizeText(parts.join(" ")).includes(normalizeText(state.query));
+}
+
+function iconSvg(name) {
+  const map = {
+    home: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v10h14V10"/>',
+    temp: '<path d="M14 14.76V3.5a2.5 2.5 0 1 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/>',
+    shield: '<path d="M12 2 4 5v6c0 5 3.5 9 8 11 4.5-2 8-6 8-11V5l-8-3z"/>',
+    media: '<rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 22h8"/><path d="M12 18v4"/>',
+    light: '<path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.7.6 1 1.4 1 2.3h6c0-.9.3-1.7 1-2.3A7 7 0 0 0 12 2z"/>',
+    noise: '<path d="M5 9v6h4l5 4V5l-5 4H5z"/><path d="M19 9a4 4 0 0 1 0 6"/><path d="M17 7a7 7 0 0 1 0 10"/>',
+  };
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${map[name]}</svg>`;
+}
+
+function weatherIconSvg(conditionRaw) {
+  const condition = normalizeText(conditionRaw);
+  if (["sunny", "clear-night", "clear", "ensolarado", "limpo"].includes(condition)) {
+    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2.2"/><path d="M12 19.3v2.2"/><path d="m4.93 4.93 1.56 1.56"/><path d="m17.51 17.51 1.56 1.56"/><path d="M2.5 12h2.2"/><path d="M19.3 12h2.2"/><path d="m4.93 19.07 1.56-1.56"/><path d="m17.51 6.49 1.56-1.56"/></svg>`;
+  }
+  if (["partlycloudy", "partly cloudy", "partlycloudynight", "parcialmente nublado"].includes(condition)) {
+    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5.5a4.5 4.5 0 0 1 6.2 4.15"/><path d="M17 18a4 4 0 0 0 0-8 5.8 5.8 0 0 0-1.3.15A6 6 0 0 0 4.3 11.5 4.5 4.5 0 0 0 6.5 20H17z"/><path d="M14.5 4.5h2"/><path d="M15.5 3.5v2"/></svg>`;
+  }
+  if (["cloudy", "nublado", "overcast"].includes(condition)) {
+    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 18a4 4 0 0 0 0-8 6 6 0 0 0-11.7 1.5A4.5 4.5 0 0 0 6.5 20H17z"/></svg>`;
+  }
+  if (["rainy", "pouring", "chuva", "chuvoso"].includes(condition)) {
+    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 16a4 4 0 0 0 0-8 6 6 0 0 0-11.7 1.5A4.5 4.5 0 0 0 6.5 18H17z"/><path d="m9 19-1 2"/><path d="m13 19-1 2"/><path d="m17 19-1 2"/></svg>`;
+  }
+  if (["lightning", "lightning-rainy", "trovoada", "tempestade"].includes(condition)) {
+    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 16a4 4 0 0 0 0-8 6 6 0 0 0-11.7 1.5A4.5 4.5 0 0 0 6.5 18H17z"/><path d="m12 13-2 4h2l-1 4 4-6h-2l2-4z"/></svg>`;
+  }
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 18a4 4 0 0 0 0-8 6 6 0 0 0-11.7 1.5A4.5 4.5 0 0 0 6.5 20H17z"/></svg>`;
+}
+
+function formatState(id) {
+  const s = entityState(id, "Indisponível");
+  const map = {
+    on: "Ligado",
+    off: "Desligado",
+    playing: "Tocando",
+    paused: "Pausado",
+    idle: "Parado",
+    unavailable: "Indisponível",
+    unknown: "Desconhecido",
+    disarmed: "Desarmado",
+    armed_away: "Armado fora",
+    open: "Aberta",
+    closed: "Fechada",
+    home: "Em casa",
+    not_home: "Fora",
+  };
+  return map[s] || s;
+}
+
+async function fetchCameraFrame(cameraId) {
+  const token = state.token || parseToken();
+  if (!token) return null;
+  const res = await fetch(`/api/camera_proxy/${cameraId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error(`Camera ${res.status}`);
+  const blob = await res.blob();
+  const prev = state.cameraUrls.get(cameraId);
+  if (prev) URL.revokeObjectURL(prev);
+  const url = URL.createObjectURL(blob);
+  state.cameraUrls.set(cameraId, url);
+  return url;
+}
+
+function roomCard(id, name = null, meta = "Grupo") {
+  const label = name || friendly(id, id);
+  return `
+    <article class="card room-card ${isOn(id) ? "is-on" : ""}" data-entity="${id}">
+      <div class="top"><div class="card-head"><span class="card-title">${meta}</span><div class="card-icon">${iconSvg("light")}</div></div></div>
+      <div class="row"><div><div class="name">${label}</div><div class="stat">${formatState(id)}</div></div><button class="switch ${isOn(id) ? "is-on" : ""}" data-toggle="${id}"><span></span></button></div>
+    </article>`;
+}
+
+function lightCard(item) {
+  const label = friendly(item.id, item.name);
+  const pct = brightnessPct(item.id);
+  const status = pct != null && isOn(item.id) ? `${pct}%` : formatState(item.id);
+  const fill = pct != null ? pct : (isOn(item.id) ? 88 : 22);
+  return `
+    <article class="card light-card" data-entity="${item.id}">
+      <div class="top"><div><div class="nm">${label}</div><div class="sb">${item.subtitle} · ${status}</div></div><button class="switch ${isOn(item.id) ? "is-on" : ""}" data-toggle="${item.id}"><span></span></button></div>
+      <div class="slider"><span style="width:${fill}%"></span></div>
+    </article>`;
+}
+
+function sectionHead(title, sub = "") {
+  return `<div class="section-head"><div><h2>${title}</h2>${sub ? `<div class="tiny muted">${sub}</div>` : ""}</div></div>`;
+}
 
 function renderHome() {
-  const onCount = state.lights.filter(l => l.on).length;
-  return html`
+  const weather = entity(ENTITY_MAP.weather);
+  const temp = weather?.attributes?.temperature ?? num(ENTITY_MAP.climate.temp, 0);
+  const condition = weather?.state || "indisponível";
+  const cam = HOME_CAMERAS.find((c) => c.id === state.activeHomeCamera) || HOME_CAMERAS[0];
+  return `
     <div class="home-grid">
-      <!-- HERO câmera -->
-      <article class="card hero">
-        <div class="hero__feed"></div>
+      <section class="card hero">
+        <div class="hero__feed"><img class="hero__feed-img" data-camera-feed="${cam.id}" data-camera-slot="home" alt="Sinal da câmera" /></div>
         <div class="hero__overlay">
-          <div class="hero__top">
-            <div class="hero__tabs">
-              <button class="is-active">Quarto Esther</button>
-              <button>Sala</button>
-              <button>Entrada</button>
-              <button>Garagem</button>
-            </div>
-            <span class="chip chip--live"><span class="pulse"></span> Live</span>
-          </div>
-          <div class="hero__bottom">
-            <div>
-              <h2 class="hero__title">Câmera · Quarto Esther</h2>
-              <p class="hero__meta">1080p · Ocupado · Ruído branco ligado</p>
-            </div>
-            <div class="hero__actions">
-              <button class="btn btn--ghost">Captura</button>
-              <button class="btn btn--lime" data-route="baby">Abrir Babytracker</button>
-            </div>
-          </div>
+          <div class="hero__top"><div class="hero__tabs" data-home-camera-tabs>${HOME_CAMERAS.map((c) => `<button class="${c.id === cam.id ? "is-active" : ""}" data-home-camera="${c.id}">${c.label}</button>`).join("")}</div><span class="chip chip--live"><span class="dot"></span> Ao vivo</span></div>
+          <div class="hero__bottom"><div><h3 class="hero__title">Casa</h3><div class="hero__meta" data-home-camera-meta>${cam.label} · ${condition} · ${temp}°C · modo ${entityState(ENTITY_MAP.houseMode, "Dia")}</div></div><div class="hero__actions"><button class="btn btn--ghost" data-route-go="baby">Babytracker</button></div></div>
         </div>
-      </article>
-
-      <!-- Stats -->
-      <article class="card stat-card card--accent">
-        <div class="card-head">
-          <span class="card-title" style="color:rgba(10,12,15,.7)">Energia hoje</span>
-          <div class="card-icon" style="background:rgba(10,12,15,.12);border-color:transparent;color:#0a0c0f">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h8l-1 8 10-12h-8l1-8z"/></svg>
-          </div>
-        </div>
-        <div class="value">12,4 <small style="font-size:14px;font-weight:500">kWh</small></div>
-        <div class="muted tiny" style="margin-top:6px">−8% vs. ontem</div>
-      </article>
-
-      <article class="card stat-card">
-        <div class="card-head">
-          <span class="card-title">Luzes acesas</span>
-          <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.7.6 1 1.4 1 2.3h6c0-.9.3-1.7 1-2.3A7 7 0 0 0 12 2z"/></svg></div>
-        </div>
-        <div class="value">${onCount}<small style="font-size:14px;color:var(--c-ink-mute);font-weight:500"> / ${state.lights.length}</small></div>
-        <div class="delta">tudo sob controle</div>
-      </article>
-
-      <!-- Cômodos -->
-      ${state.rooms.slice(0,3).map(r => roomCard(r)).join("")}
-
-      <!-- Cenas -->
-      <article class="card" style="grid-column: span 3">
-        <div class="card-head">
-          <span class="card-title">Cenas rápidas</span>
-          <button class="btn btn--ghost tiny">Editar</button>
-        </div>
-        <div class="scenes">
-          ${["Bom dia","Cinema","Jantar","Dormir"].map((n,i)=>html`
-            <button class="scene" data-scene="${n}">
-              <span class="ic" style="background:${["#d6ff4d22","#b39dff22","#ffd84a22","#7dd3fc22"][i]};color:${["#d6ff4d","#b39dff","#ffd84a","#7dd3fc"][i]}">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/></svg>
-              </span>
-              <span class="nm">${n}</span>
-              <span class="sb">${["Café e cortinas","Luzes 30%","Música suave","Tudo apagado"][i]}</span>
-            </button>`).join("")}
-        </div>
-      </article>
-    </div>
-  `;
-}
-
-function roomCard(r) {
-  return html`
-    <article class="card room-card ${r.on?"is-on":""}" data-room="${r.id}">
-      <div class="row">
-        <div class="card-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v10h14V10"/></svg>
-        </div>
-        <div class="switch ${r.on?"is-on":""}" data-toggle-room="${r.id}"></div>
-      </div>
-      <div>
-        <div class="name">${r.name}</div>
-        <div class="stat">${r.devices} dispositivos · ${r.temp}°</div>
-      </div>
-    </article>`;
-}
-
-function renderLights() {
-  return html`
-    <div class="section-head"><h2>Todos os cômodos</h2><span class="muted tiny">${state.lights.filter(l=>l.on).length} acesas de ${state.lights.length}</span></div>
-    <div class="lights-grid">
-      ${state.lights.map(l => lightCard(l)).join("")}
-    </div>
-  `;
-}
-function lightCard(l) {
-  return html`
-    <article class="card light-card" data-entity="${l.entity}">
-      <div class="top">
-        <div>
-          <div class="nm">${l.name}</div>
-          <div class="sb">${l.room} · ${l.on?l.bri+"%":"desligada"}</div>
-        </div>
-        <div class="switch ${l.on?"is-on":""}" data-toggle-light="${l.entity}"></div>
-      </div>
-      <div class="slider"><span style="width:${l.on?l.bri:0}%"></span></div>
-    </article>`;
-}
-
-function renderClimate() {
-  const c = state.climate;
-  const p = Math.min(100, Math.max(0, (c.indoor-15)/15*100));
-  return html`
-    <div class="climate-grid">
-      <article class="card gauge-card" style="text-align:center">
-        <div class="card-head" style="justify-content:center;gap:10px">
-          <span class="card-title">Temperatura interna</span>
-        </div>
-        <div class="gauge" style="--p:${p}"><div class="v"><b>${c.indoor}°</b><small>compensada ${c.comp}°</small></div></div>
-        <div class="chip chip--lime"><span class="pulse"></span> ${c.comfort}</div>
-      </article>
-
-      <article class="card stat-card">
-        <div class="card-head"><span class="card-title">Umidade</span>
-          <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2s6 7 6 12a6 6 0 1 1-12 0c0-5 6-12 6-12z"/></svg></div>
-        </div>
-        <div class="value">${c.humidity}<small style="font-size:14px;color:var(--c-ink-mute)">%</small></div>
-        <div class="delta">faixa confortável</div>
-      </article>
-
-      <article class="card stat-card">
-        <div class="card-head"><span class="card-title">Externo</span>
-          <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="5"/><path d="M12 1v3M12 20v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1 12h3M20 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg></div>
-        </div>
-        <div class="value">${state.weather.temp}°</div>
-        <div class="muted tiny" style="margin-top:6px">${state.weather.desc}</div>
-      </article>
-    </div>
-  `;
-}
-
-function renderSecurity() {
-  return html`
-    <div class="sec-grid">
-      <article class="card hero" style="min-height:380px;padding:0">
-        <div class="hero__feed"></div>
-        <div class="hero__overlay">
-          <div class="hero__top">
-            <div class="hero__tabs">
-              <button class="is-active">Entrada</button>
-              <button>Garagem</button>
-              <button>Sala</button>
-              <button>Esther</button>
-            </div>
-            <span class="chip chip--live"><span class="pulse"></span> Live</span>
-          </div>
-          <div class="hero__bottom">
-            <div><h2 class="hero__title">Câmera · Entrada</h2><p class="hero__meta">1080p · sem movimento · porta fechada</p></div>
-            <div class="hero__actions"><button class="btn">Histórico</button><button class="btn btn--lime">Falar</button></div>
-          </div>
-        </div>
-      </article>
-      <div style="display:grid;gap:16px">
-        ${[
-          ["Porta principal","Fechada","ok","M12 2 4 5v6c0 5 3.5 9 8 11 4.5-2 8-6 8-11V5l-8-3z"],
-          ["Presença","Ninguém em casa","muted","M16 11a4 4 0 1 0-8 0 4 4 0 0 0 8 0zM4 21c1-4 4-6 8-6s7 2 8 6"],
-          ["Alertas (24h)","0 alertas","ok","M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"],
-          ["Câmeras online","4 / 4","lime","M23 7 16 12l7 5V7zM2 6h13v12H2z"],
-        ].map(([t,v,c,d])=>html`
-          <article class="card">
-            <div class="card-head"><span class="card-title">${t}</span>
-              <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="${d}"/></svg></div>
-            </div>
-            <div class="big-num">${v}</div>
-            ${c==="ok"?'<span class="chip chip--ok"><span class="pulse"></span> Tudo ok</span>':c==="lime"?'<span class="chip chip--lime"><span class="pulse"></span> Online</span>':'<span class="chip">Sem atividade</span>'}
-          </article>
-        `).join("")}
-      </div>
-    </div>
-  `;
-}
-
-function renderMedia() {
-  return html`
-    <div class="media-grid">
-      <article class="card player">
-        <div class="art">♪</div>
-        <div>
-          <div class="nm" style="font-family:var(--f-display);font-size:18px;font-weight:700">${state.media.now}</div>
-          <div class="muted tiny">${"Calm Kids · Berceuse"}</div>
-        </div>
-        <div class="progress"><span></span></div>
-        <div class="ctrls">
-          <button class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></svg></button>
-          <button class="pp" data-pp><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg></button>
-          <button class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg></button>
-        </div>
-      </article>
-
-      ${[
-        ["TV Sala","LG OLED · Netflix","ok"],
-        ["Echo Quarto","Tocando · vol 32","lime"],
-        ["Echo Sala","Inativo","muted"],
-        ["Sonos Cozinha","Pausado","muted"],
-      ].map(([n,s,c])=>html`
-        <article class="card">
-          <div class="card-head"><span class="card-title">${n}</span>
-            <div class="card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 22h8"/></svg></div>
-          </div>
-          <div class="big-num" style="font-size:22px">${s}</div>
-          <div style="margin-top:14px;display:flex;gap:8px"><button class="btn">⏯</button><button class="btn">+</button><button class="btn">−</button></div>
-        </article>
-      `).join("")}
-    </div>
-  `;
-}
-
-// =========================================================
-// BABYTRACKER (estrela)
-// =========================================================
-function renderBaby() {
-  const b = state.baby;
-  return html`
-    <div class="baby">
-      <!-- LINHA 1: 5 cards -->
-      <div class="baby__row1">
-
-        <!-- 1) Status -->
-        <article class="card baby-card baby-status ${b.occupied?"is-occupied":""}" data-card="status">
-          <div class="head">
-            <div>
-              <div class="ttl">Status do berço</div>
-              <div class="sub">Detecção em tempo real</div>
-            </div>
-            <span class="chip ${b.occupied?'chip--lime':''}"><span class="pulse"></span> ${b.occupied?"Ocupado":"Vazio"}</span>
-          </div>
-          <div class="big-num" style="font-size:30px">${b.occupied?"Dormindo":"—"}</div>
-          <div class="face">
-            <div class="av">${b.lastFace.name[0]}</div>
-            <div>
-              <div class="nm">${b.lastFace.name}</div>
-              <div class="tm">Última detecção · ${b.lastFace.at}</div>
-            </div>
-          </div>
-        </article>
-
-        <!-- 2) Temperatura -->
-        <article class="card baby-card baby-temp" data-card="temp">
-          <div class="head">
-            <div>
-              <div class="ttl">Temperatura</div>
-              <div class="sub">Quarto Esther</div>
-            </div>
-            <span class="chip chip--ok"><span class="pulse"></span> Ideal</span>
-          </div>
-          <div class="row">
-            <div class="ring"><b>${b.temp}°</b></div>
-            <div>
-              <div class="muted tiny">COMPENSADA</div>
-              <div style="font-family:var(--f-display);font-size:22px;font-weight:700">${b.tempComp}°</div>
-              <div class="muted tiny" style="margin-top:6px">Umidade ${b.humidity}%</div>
-            </div>
-          </div>
-        </article>
-
-        <!-- 3) Mídia (Echo) -->
-        <article class="card baby-card baby-media ${b.echo.state==='paused'?'is-paused':''}" data-card="media">
-          <div class="head">
-            <div>
-              <div class="ttl">Echo do quarto</div>
-              <div class="sub">media_player.echo_quarto</div>
-            </div>
-            <div class="vol"><i></i><i></i><i></i><i></i></div>
-          </div>
-          <div>
-            <div class="nowplay">${b.echo.track}</div>
-            <div class="artist">${b.echo.artist}</div>
-          </div>
-          <div class="ctrls">
-            <button class="icon-btn" data-media="prev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></svg></button>
-            <button class="pp" data-media="pp">
-              ${b.echo.state==='playing'
-                ? '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>'
-                : '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>'}
-            </button>
-            <button class="icon-btn" data-media="next"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg></button>
-          </div>
-        </article>
-
-        <!-- 4) Ruído branco -->
-        <article class="card baby-card baby-noise ${b.whiteNoise?'is-on':''}" data-card="noise">
-          <div class="head">
-            <div>
-              <div class="ttl">Ruído branco</div>
-              <div class="sub">input_boolean.ruido_branco</div>
-            </div>
-            <span class="chip ${b.whiteNoise?'chip--lime':''}">${b.whiteNoise?'Ligado':'Desligado'}</span>
-          </div>
-          <div class="wave">
-            <svg viewBox="0 0 200 40" preserveAspectRatio="none">
-              <path d="M0 20 Q 10 5, 20 20 T 40 20 T 60 20 T 80 20 T 100 20 T 120 20 T 140 20 T 160 20 T 180 20 T 200 20" fill="none" stroke="${b.whiteNoise?'#7dd3fc':'#5a5f68'}" stroke-width="2"/>
-            </svg>
-          </div>
-          <div class="btns">
-            <button class="${b.whiteNoise?'is-active':''}" data-noise="on">Ligar</button>
-            <button class="${!b.whiteNoise?'is-active':''}" data-noise="off">Desligar</button>
-          </div>
-        </article>
-
-        <!-- 5) Controles -->
-        <article class="card baby-card baby-ctrls" data-card="ctrls">
-          <div class="head">
-            <div>
-              <div class="ttl">Controles</div>
-              <div class="sub">Iluminação e aquecedor</div>
-            </div>
-          </div>
-          <div>
-            ${babyToggle("Teto",       "light_teto",  b.light_teto, "light.teto")}
-            ${babyToggle("LED Esther", "light_led",   b.light_led,  "switch.cozylife_66c5")}
-            ${babyToggle("Aquecedor",  "aquecedor",   b.aquecedor,  "switch.aquecedor_interruptor_1")}
-          </div>
-        </article>
-
-      </div>
-
-      <!-- LINHA 2: CÂMERA GIGANTE -->
-      <article class="baby__cam">
-        <div class="feed"></div>
-        <div class="ovl">
-          <div class="top">
-            <span class="pill live"><span class="pulse"></span> AO VIVO</span>
-            <div style="display:flex;gap:8px">
-              <span class="pill">1080p · 30fps</span>
-              <span class="pill">camera.berco_2</span>
-            </div>
-          </div>
-          <div class="bot">
-            <div>
-              <div class="nm">Berço · Esther</div>
-              <div class="meta">Quarto silencioso · ruído branco ligado · ${b.temp}°</div>
-            </div>
-            <div class="acts">
-              <button class="btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Captura</button>
-              <button class="btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>Falar</button>
-              <button class="btn btn--lime">Tela cheia</button>
-            </div>
-          </div>
-        </div>
-      </article>
-    </div>
-  `;
-}
-function babyToggle(name, key, on, entity) {
-  return html`
-    <div class="toggle-row ${on?'is-on':''}" data-baby-toggle="${key}" data-entity="${entity}">
-      <div>
-        <div class="nm">${name}</div>
-        <div class="sb">${entity}</div>
-      </div>
-      <div class="switch ${on?'is-on':''}"></div>
+      </section>
+      ${roomCard(ENTITY_MAP.groups.sala, "Sala")}
+      ${roomCard(ENTITY_MAP.groups.cozinha, "Cozinha")}
+      ${roomCard(ENTITY_MAP.groups.servicos, "Serviços")}
+      ${roomCard(ENTITY_MAP.groups.esther, "Quarto Esther")}
+      ${roomCard(ENTITY_MAP.groups.suite, "Suite")}
+      <article class="card stat-card"><div class="label">Temperatura interna</div><div class="value">${num(ENTITY_MAP.climate.temp, 0).toFixed(1)}°</div><div class="delta">Umidade ${num(ENTITY_MAP.climate.humidity, 0).toFixed(0)}%</div></article>
+      <article class="card stat-card"><div class="label">Berço</div><div class="value">${isOn(ENTITY_MAP.baby.occupied) ? "Ocupado" : "Livre"}</div><div class="delta ${isOn(ENTITY_MAP.baby.occupied) ? "" : "down"}">Face: ${entityState(ENTITY_MAP.baby.face, "desconhecida")}</div></article>
+      <article class="card stat-card"><div class="label">Segurança</div><div class="value">${formatState(ENTITY_MAP.security.alarm)}</div><div class="delta ${entityState(ENTITY_MAP.security.door) === "on" ? "down" : ""}">Porta ${formatState(ENTITY_MAP.security.door)}</div></article>
     </div>`;
 }
 
-// =========================================================
-// BIND — atualizações localizadas (sem rerender full)
-// =========================================================
-function bindView(route) {
-  // Toggle de luz (Luzes page)
-  $$("[data-toggle-light]").forEach(el => {
-    el.addEventListener("click", e => {
+function renderLights() {
+  const blocks = Object.entries(ENTITY_MAP.lights).flatMap(([room, items]) => {
+    const roomTitle = room === "esther" ? "Quarto Esther" : room === "servicos" ? "Serviços" : room;
+    const filtered = items.filter((item) => matchesQuery(item.name, item.subtitle, roomTitle, friendly(item.id, item.name)));
+    if (!filtered.length) return [];
+    return [`<div class="card card--solid" style="grid-column:span 3;padding:12px 18px;"><h3 style="margin:0;font-family:var(--f-display);font-size:18px;text-transform:capitalize;">${roomTitle}</h3></div>`, ...filtered.map(lightCard)];
+  });
+  return `${sectionHead("Luzes", state.query ? `Resultados para \"${state.query}\"` : "Controles individuais por cômodo")}<div class="home-grid" style="grid-template-columns:repeat(3,1fr);">${blocks.join("") || `<article class="card card--solid"><h3 style="margin:0 0 8px;">Nada encontrado</h3><div class="muted">Nenhum dispositivo corresponde à busca.</div></article>`}</div>`;
+}
+
+function renderClimate() {
+  const temp = num(ENTITY_MAP.climate.temp, 0);
+  const hum = num(ENTITY_MAP.climate.humidity, 0);
+  const esther = num(ENTITY_MAP.climate.estherTemp, 0);
+  const compensated = num(ENTITY_MAP.climate.compensated, esther);
+  return `${sectionHead("Clima", "Leituras da casa e do quarto da Esther")}<div class="climate-grid"><article class="card gauge-card"><div class="card-head"><span class="card-title">Casa</span><div class="card-icon">${iconSvg("temp")}</div></div><div class="gauge"><div class="gauge__dial" style="--p:${Math.max(10, Math.min(95, temp * 3.2))}"></div><div class="gauge__center"><strong>${temp.toFixed(1)}°</strong><span>Temperatura</span></div></div></article><article class="card stat-card"><div class="label">Umidade</div><div class="value">${hum.toFixed(0)}%</div><div class="delta">Conforto da casa</div></article><article class="card stat-card"><div class="label">Esther</div><div class="value">${esther.toFixed(1)}°</div><div class="delta">Compensada ${compensated.toFixed(1)}°</div></article></div>`;
+}
+
+function renderSecurity() {
+  return `${sectionHead("Segurança", "Porta principal e alarme")}<div class="home-grid" style="grid-template-columns:2fr 1fr 1fr;"><article class="card hero" style="min-height:260px;"><div class="hero__feed"><img class="hero__feed-img" data-camera-feed="${ENTITY_MAP.baby.camera}" alt="Sinal da câmera" /></div><div class="hero__overlay"><div class="hero__top"><span class="chip chip--live"><span class="dot"></span> Monitoramento</span></div><div class="hero__bottom"><div><h3 class="hero__title">Porta principal</h3><div class="hero__meta">${formatState(ENTITY_MAP.security.door)}</div></div></div></div></article><article class="card stat-card"><div class="label">Alarme</div><div class="value">${formatState(ENTITY_MAP.security.alarm)}</div></article><article class="card stat-card"><div class="label">Porta</div><div class="value">${formatState(ENTITY_MAP.security.door)}</div></article></div>`;
+}
+
+function mediaCard(id, label) {
+  const e = entity(id);
+  const title = e?.attributes?.media_title || friendly(id, label);
+  const artist = e?.attributes?.media_artist || e?.attributes?.source || formatState(id);
+  return `<article class="card player" data-entity="${id}"><div class="card-head"><span class="card-title">${label}</span><div class="card-icon">${iconSvg("media")}</div></div><div class="nm" style="font-family:var(--f-display);font-size:20px;font-weight:700;">${friendly(id, label)}</div><div class="nowplay" style="margin-top:10px;">${title}</div><div class="artist">${artist}</div><div class="progress" style="margin-top:16px;"><span style="width:${entityState(id) === "playing" ? 58 : 24}%;"></span></div><div style="display:flex;gap:8px;margin-top:16px;"><button class="btn" data-media-playpause="${id}">${entityState(id) === "playing" ? "Pausar" : "Play/Pause"}</button></div></article>`;
+}
+
+function renderMedia() {
+  return `${sectionHead("Mídia", "Players principais da casa")}<div class="media-grid">${mediaCard(ENTITY_MAP.media.tv, friendly(ENTITY_MAP.media.tv, "TV"))}${mediaCard(ENTITY_MAP.media.firetv, friendly(ENTITY_MAP.media.firetv, "Fire TV"))}${mediaCard(ENTITY_MAP.media.echoSala, friendly(ENTITY_MAP.media.echoSala, "Echo Sala"))}${mediaCard(ENTITY_MAP.media.echoQuarto, friendly(ENTITY_MAP.media.echoQuarto, "Echo Quarto"))}${mediaCard(ENTITY_MAP.media.tablet, friendly(ENTITY_MAP.media.tablet, "Tablet"))}</div>`;
+}
+
+function toggleRow(id, name, subtitle) {
+  return `<div class="toggle-row ${isOn(id) ? "is-on" : ""}" data-entity="${id}"><div><div class="nm">${name}</div><div class="sb">${subtitle}</div></div><button class="switch ${isOn(id) ? "is-on" : ""}" data-toggle="${id}"><span></span></button></div>`;
+}
+
+function renderBaby() {
+  const occ = isOn(ENTITY_MAP.baby.occupied);
+  const noiseOn = isOn(ENTITY_MAP.baby.noise);
+  const mediaId = ENTITY_MAP.baby.media;
+  const mediaEnt = entity(mediaId);
+  const mediaTitle = mediaEnt?.attributes?.media_title || friendly(mediaId, "Echo Quarto");
+  const mediaArtist = mediaEnt?.attributes?.media_artist || formatState(mediaId);
+  return `<div class="baby"><div class="baby__row1"><article class="card baby-card baby-status ${occ ? "is-occupied" : ""}"><div class="head"><div class="ttl">Status</div><div class="card-icon">${iconSvg("home")}</div></div><div><div class="sub">Ocupação do berço</div><div style="font-family:var(--f-display);font-size:28px;font-weight:700;margin-top:6px;">${occ ? "Ocupado" : "Livre"}</div></div><div class="face"><div class="av">E</div><div><div class="nm">${entityState(ENTITY_MAP.baby.face, "desconhecida")}</div><div class="tm">Última face reconhecida</div></div></div></article><article class="card baby-card baby-temp"><div class="head"><div class="ttl">Temperatura</div><div class="card-icon">${iconSvg("temp")}</div></div><div class="row"><div class="ring"><b>${num(ENTITY_MAP.baby.temp, 0).toFixed(1)}°</b></div><div><div class="sub">Atual</div><div style="font-family:var(--f-display);font-size:26px;font-weight:700;">${num(ENTITY_MAP.baby.temp, 0).toFixed(1)}°C</div><div class="sub" style="margin-top:8px;">Compensada ${entityState(ENTITY_MAP.baby.compensated, "--")}</div></div></div></article><article class="card baby-card baby-media ${entityState(mediaId) === "paused" ? "is-paused" : ""}" data-entity="${mediaId}"><div class="head"><div class="ttl">Mídia</div><div class="card-icon">${iconSvg("media")}</div></div><div class="nowplay">${mediaTitle}</div><div class="artist">${mediaArtist}</div><div class="ctrls"><button class="btn" data-media-prev="${mediaId}">◀</button><button class="pp" data-media-playpause="${mediaId}">${entityState(mediaId) === "playing" ? "❚❚" : "▶"}</button><div class="vol"><i></i><i></i><i></i><i></i></div></div></article><article class="card baby-card baby-noise ${noiseOn ? "is-on" : ""}" data-entity="${ENTITY_MAP.baby.noise}"><div class="head"><div class="ttl">Ruído branco</div><div class="card-icon">${iconSvg("noise")}</div></div><div class="wave"><svg viewBox="0 0 200 40" fill="none"><path d="M0 20c20 0 20-12 40-12s20 24 40 24 20-24 40-24 20 24 40 24 20-12 40-12" stroke="currentColor" stroke-width="3" stroke-linecap="round" opacity=".8"/></svg></div><div class="btns"><button class="${noiseOn ? "is-active" : ""}" data-script="${ENTITY_MAP.scripts.noiseOn}">Ligar</button><button class="${!noiseOn ? "is-active" : ""}" data-script="${ENTITY_MAP.scripts.noiseOff}">Parar</button></div></article><article class="card baby-card baby-ctrls"><div class="head"><div class="ttl">Controles</div><div class="card-icon">${iconSvg("light")}</div></div>${toggleRow(ENTITY_MAP.baby.teto, "Teto", "Luz principal")}${toggleRow(ENTITY_MAP.baby.led, "Led Esther", "Apoio")}${toggleRow(ENTITY_MAP.baby.heater, "Aquecedor", "Conforto")}</article></div><section class="card baby__cam"><div class="feed"><img class="feed-img" data-camera-feed="${ENTITY_MAP.baby.camera}" alt="Sinal da câmera" /></div><div class="ovl"><div class="top"><div><div class="nm">Berço</div><div class="meta">Quarto da Esther · ${occ ? "ocupado" : "livre"}</div></div><div class="acts"><span class="pill live"><span class="pulse"></span>Live</span><span class="pill">Sinal ativo</span></div></div><div class="bot"><div></div><div class="acts"><button class="btn btn--ghost" data-refresh-camera="${ENTITY_MAP.baby.camera}">Atualizar</button><button class="btn" data-route-go="security">Segurança</button></div></div></div></section></div>`;
+}
+
+function renderError() {
+  const needsToken = (state.error || "").includes("401") || (state.error || "").includes("Token");
+  return `<article class="card card--solid"><h2 style="margin-top:0;">Erro de integração</h2><p>${state.error}</p>${needsToken ? `<div style="display:grid;gap:12px;max-width:640px;margin-top:18px;"><input id="tokenInput" type="password" placeholder="Cole aqui um Long-Lived Access Token do Home Assistant" style="width:100%;padding:14px 16px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:inherit;outline:none;" /><div style="display:flex;gap:12px;"><button class="btn btn--lime" id="saveTokenBtn">Salvar token</button><button class="btn" id="clearTokenBtn">Limpar token</button></div></div>` : `<button class="btn btn--lime" id="retryBtn">Tentar novamente</button>`}</article>`;
+}
+
+function patchHeader() {
+  const [title, sub] = titleMap[state.route] || titleMap.home;
+  pageTitle.textContent = title;
+  pageSub.textContent = state.error && !state.connected ? state.error : sub;
+  const weather = entity(ENTITY_MAP.weather);
+  const localTemp = num(ENTITY_MAP.climate.temp, Number.NaN);
+  const weatherTemp = weather?.attributes?.temperature;
+  const temp = Number.isFinite(localTemp) ? localTemp : (Number.isFinite(weatherTemp) ? weatherTemp : 0);
+  const condition = weather?.state || "";
+  wxTemp.textContent = `${temp.toFixed(0)}\u00B0`;
+  if (wxLocation) wxLocation.textContent = "Taubat\u00E9";
+  if (wxIcon) wxIcon.innerHTML = weatherIconSvg(condition);
+  $$("#nav .nav-item").forEach((btn) => btn.classList.toggle("is-active", btn.dataset.route === state.route));
+  if (searchInput) searchInput.value = state.query;
+}
+
+function patchEntityUI(id) {
+  const current = isOn(id);
+  const pct = brightnessPct(id);
+  document.querySelectorAll(`[data-toggle="${id}"]`).forEach((el) => el.classList.toggle("is-on", current));
+  document.querySelectorAll(`[data-entity="${id}"]`).forEach((el) => {
+    el.classList.toggle("is-on", current);
+    if (el.classList.contains("room-card")) {
+      const stat = el.querySelector(".stat");
+      if (stat) stat.textContent = formatState(id);
+    }
+    if (el.classList.contains("light-card")) {
+      const sb = el.querySelector(".sb");
+      if (sb) {
+        const subtitle = sb.textContent.split(" · ")[0];
+        sb.textContent = `${subtitle} · ${pct != null && current ? `${pct}%` : formatState(id)}`;
+      }
+      const slider = el.querySelector(".slider span");
+      if (slider) slider.style.width = `${pct != null ? pct : (current ? 88 : 22)}%`;
+    }
+    if (el.classList.contains("toggle-row")) {
+      const sb = el.querySelector(".sb");
+      if (sb) sb.textContent = current ? "Ligado" : "Desligado";
+    }
+    if (el.classList.contains("player")) {
+      const btn = el.querySelector("[data-media-playpause]");
+      if (btn) btn.textContent = entityState(id) === "playing" ? "Pausar" : "Play/Pause";
+      const artist = el.querySelector(".artist");
+      if (artist) artist.textContent = entity(id)?.attributes?.media_artist || entity(id)?.attributes?.source || formatState(id);
+      const title = el.querySelector(".nowplay");
+      if (title) title.textContent = entity(id)?.attributes?.media_title || friendly(id, friendly(id, id));
+    }
+    if (id === ENTITY_MAP.baby.noise && el.classList.contains("baby-noise")) {
+      const buttons = el.querySelectorAll("[data-script]");
+      buttons[0]?.classList.toggle("is-active", current);
+      buttons[1]?.classList.toggle("is-active", !current);
+    }
+  });
+  patchHeader();
+}
+
+
+function cameraSlotKey(img, fallback = "default") {
+  return img?.dataset?.cameraSlot || img?.dataset?.cameraFeed || fallback;
+}
+
+function stopCameraFeeds() {
+  for (const timer of state.cameraTimers.values()) clearInterval(timer);
+  state.cameraTimers.clear();
+}
+
+async function refreshCameraFeed(img) {
+  if (!img?.dataset?.cameraFeed) return;
+  try {
+    const url = await fetchCameraFrame(img.dataset.cameraFeed);
+    if (url) img.src = url;
+  } catch {}
+}
+
+function bindCameraFeed(img) {
+  if (!img) return;
+  const slot = cameraSlotKey(img);
+  const existing = state.cameraTimers.get(slot);
+  if (existing) clearInterval(existing);
+  refreshCameraFeed(img);
+  state.cameraTimers.set(slot, setInterval(() => refreshCameraFeed(img), 2500));
+}
+
+function startCameraFeeds() {
+  stopCameraFeeds();
+  $$("[data-camera-feed]").forEach((img) => bindCameraFeed(img));
+}
+
+function updateHomeCameraMeta() {
+  const meta = $("[data-home-camera-meta]");
+  if (!meta) return;
+  const weather = entity(ENTITY_MAP.weather);
+  const temp = weather?.attributes?.temperature ?? num(ENTITY_MAP.climate.temp, 0);
+  const condition = weather?.state || "indisponível";
+  const cam = HOME_CAMERAS.find((item) => item.id === state.activeHomeCamera) || HOME_CAMERAS[0];
+  meta.textContent = `${cam.label} · ${condition} · ${temp}°C · modo ${entityState(ENTITY_MAP.houseMode, "Dia")}`;
+}
+
+function switchHomeCamera(nextId) {
+  if (state.route !== "home" || !nextId || nextId === state.activeHomeCamera) return;
+  const previousIndex = HOME_CAMERAS.findIndex((item) => item.id === state.activeHomeCamera);
+  const nextIndex = HOME_CAMERAS.findIndex((item) => item.id === nextId);
+  const direction = nextIndex >= previousIndex ? "left" : "right";
+  state.activeHomeCamera = nextId;
+
+  const tabs = $("[data-home-camera-tabs]");
+  const img = $("[data-camera-slot='home']");
+  const meta = $("[data-home-camera-meta]");
+
+  $$("[data-home-camera]").forEach((btn) => btn.classList.toggle("is-active", btn.dataset.homeCamera === nextId));
+
+  tabs?.classList.remove("is-sliding-left", "is-sliding-right");
+  tabs?.classList.add(direction === "left" ? "is-sliding-left" : "is-sliding-right");
+  window.setTimeout(() => tabs?.classList.remove("is-sliding-left", "is-sliding-right"), 260);
+
+  if (meta) {
+    meta.classList.remove("is-sliding-left", "is-sliding-right");
+    meta.classList.add(direction === "left" ? "is-sliding-left" : "is-sliding-right");
+  }
+
+  if (!img) {
+    updateHomeCameraMeta();
+    return;
+  }
+
+  img.classList.remove("is-slide-in-left", "is-slide-in-right", "is-slide-out-left", "is-slide-out-right");
+  img.classList.add(direction === "left" ? "is-slide-out-left" : "is-slide-out-right");
+
+  window.setTimeout(async () => {
+    img.dataset.cameraFeed = nextId;
+    updateHomeCameraMeta();
+    await refreshCameraFeed(img);
+    bindCameraFeed(img);
+    img.classList.remove("is-slide-out-left", "is-slide-out-right");
+    img.classList.add(direction === "left" ? "is-slide-in-left" : "is-slide-in-right");
+    window.setTimeout(() => {
+      img.classList.remove("is-slide-in-left", "is-slide-in-right");
+      meta?.classList.remove("is-sliding-left", "is-sliding-right");
+    }, 280);
+  }, 180);
+}
+
+function render() {
+  patchHeader();
+  if (state.error && !state.connected) {
+    view.innerHTML = renderError();
+    $("#retryBtn")?.addEventListener("click", bootstrap);
+    $("#saveTokenBtn")?.addEventListener("click", () => {
+      const value = $("#tokenInput")?.value?.trim();
+      if (!value) return;
+      localStorage.setItem("auroraHaToken", value);
+      bootstrap();
+    });
+    $("#clearTokenBtn")?.addEventListener("click", () => {
+      localStorage.removeItem("auroraHaToken");
+      state.token = null;
+      bootstrap();
+    });
+    return;
+  }
+  const renders = {
+    home: renderHome,
+    lights: renderLights,
+    climate: renderClimate,
+    security: renderSecurity,
+    media: renderMedia,
+    baby: renderBaby,
+  };
+  view.innerHTML = renders[state.route]();
+  bindInteractions();
+  startCameraFeeds();
+}
+
+function bindInteractions() {
+  $$("[data-route-go]").forEach((btn) => {
+    btn.onclick = () => go(btn.dataset.routeGo);
+  });
+  $$("[data-home-camera]").forEach((btn) => {
+    btn.onclick = () => {
+      switchHomeCamera(btn.dataset.homeCamera);
+    };
+  });
+  $$("[data-toggle]").forEach((btn) => {
+    btn.onclick = async (e) => {
       e.stopPropagation();
-      const id = el.dataset.toggleLight;
-      const l = state.lights.find(x => x.entity === id);
-      l.on = !l.on; if (l.on && l.bri === 0) l.bri = 70; if (!l.on) l.bri = 0;
-      // Atualiza apenas este card (sem rerender full)
-      const card = el.closest(".light-card");
-      el.classList.toggle("is-on", l.on);
-      card.querySelector(".sb").textContent = `${l.room} · ${l.on?l.bri+"%":"desligada"}`;
-      card.querySelector(".slider span").style.width = (l.on?l.bri:0) + "%";
-      HA.callService("light", l.on?"turn_on":"turn_off", { entity_id: id });
-    });
+      await toggleEntity(btn.dataset.toggle);
+    };
   });
-
-  // Toggle cômodo (Home)
-  $$("[data-toggle-room]").forEach(el => {
-    el.addEventListener("click", e => {
-      e.stopPropagation();
-      const id = el.dataset.toggleRoom;
-      const r = state.rooms.find(x => x.id === id);
-      r.on = !r.on;
-      el.classList.toggle("is-on", r.on);
-      el.closest(".room-card").classList.toggle("is-on", r.on);
-    });
+  $$("[data-script]").forEach((btn) => {
+    btn.onclick = async () => runScript(btn.dataset.script);
   });
-
-  // Cenas
-  $$("[data-scene]").forEach(b => b.addEventListener("click", () => {
-    b.animate([{transform:"scale(1)"},{transform:"scale(.96)"},{transform:"scale(1)"}],{duration:200,easing:"ease-out"});
-    HA.callService("scene", "turn_on", { entity_id: "scene." + b.dataset.scene.toLowerCase().replace(/\s/g,"_") });
-  }));
-
-  if (route === "baby") bindBaby();
-  if (route === "media") bindMedia();
-}
-
-function bindBaby() {
-  // Toggles individuais
-  $$("[data-baby-toggle]").forEach(el => {
-    el.addEventListener("click", () => {
-      const key = el.dataset.babyToggle;
-      state.baby[key] = !state.baby[key];
-      const on = state.baby[key];
-      el.classList.toggle("is-on", on);
-      el.querySelector(".switch").classList.toggle("is-on", on);
-      // Animação sutil
-      el.animate([{transform:"scale(1)"},{transform:"scale(.985)"},{transform:"scale(1)"}],{duration:220,easing:"ease-out"});
-      HA.callService("homeassistant", on?"turn_on":"turn_off", { entity_id: el.dataset.entity });
-    });
+  $$("[data-media-playpause]").forEach((btn) => {
+    btn.onclick = async () => mediaPlayPause(btn.dataset.mediaPlaypause);
   });
-
-  // Ruído branco
-  $$("[data-noise]").forEach(b => b.addEventListener("click", () => {
-    const on = b.dataset.noise === "on";
-    state.baby.whiteNoise = on;
-    const card = b.closest(".baby-noise");
-    card.classList.toggle("is-on", on);
-    card.querySelectorAll("[data-noise]").forEach(x => x.classList.toggle("is-active", x.dataset.noise===(on?"on":"off")));
-    card.querySelector(".chip").textContent = on?"Ligado":"Desligado";
-    card.querySelector(".chip").classList.toggle("chip--lime", on);
-    card.querySelector("svg path").setAttribute("stroke", on?"#7dd3fc":"#5a5f68");
-    HA.callService("input_boolean", on?"turn_on":"turn_off", { entity_id: "input_boolean.ruido_branco" });
-  }));
-
-  // Media play/pause local
-  const ppBtn = $('[data-media="pp"]');
-  ppBtn?.addEventListener("click", () => {
-    const playing = state.baby.echo.state === "playing";
-    state.baby.echo.state = playing ? "paused" : "playing";
-    const card = ppBtn.closest(".baby-media");
-    card.classList.toggle("is-paused", playing);
-    ppBtn.innerHTML = playing
-      ? '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>'
-      : '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
-    HA.callService("media_player", playing?"media_pause":"media_play", { entity_id:"media_player.echo_quarto" });
+  $$("[data-media-prev]").forEach((btn) => {
+    btn.onclick = async () => mediaPrevious(btn.dataset.mediaPrev);
+  });
+  $$("[data-refresh-camera]").forEach((btn) => {
+    btn.onclick = startCameraFeeds;
   });
 }
 
-function bindMedia() {
-  $('[data-pp]')?.addEventListener("click", e => {
-    const b = e.currentTarget;
-    state.media.playing = !state.media.playing;
-    b.innerHTML = state.media.playing
-      ? '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>'
-      : '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>';
-  });
+function go(route) {
+  state.route = ROUTES.includes(route) ? route : "home";
+  history.replaceState(null, "", `#${state.route}`);
+  render();
 }
 
-// ---------- Boot ----------
-$("#wxTemp").textContent = state.weather.temp + "°";
-go("home");
+function setEntityState(id, nextState) {
+  if (!state.entities[id]) return;
+  state.entities[id].state = nextState;
+}
+
+async function toggleEntity(id) {
+  const domain = id.split(".")[0];
+  const wasOn = isOn(id);
+  try {
+    await callService(domain, "toggle", {}, { entity_id: id });
+    setEntityState(id, wasOn ? "off" : "on");
+    patchEntityUI(id);
+  } catch {
+    state.error = `Falha ao alternar ${friendly(id, id)}.`;
+    render();
+  }
+}
+
+async function runScript(id) {
+  try {
+    await callService("script", "turn_on", { entity_id: id });
+    if (id === ENTITY_MAP.scripts.noiseOn) setEntityState(ENTITY_MAP.baby.noise, "on");
+    if (id === ENTITY_MAP.scripts.noiseOff) setEntityState(ENTITY_MAP.baby.noise, "off");
+    patchEntityUI(ENTITY_MAP.baby.noise);
+  } catch {
+    state.error = `Falha ao executar ${id}.`;
+    render();
+  }
+}
+
+async function mediaPlayPause(id) {
+  try {
+    await callService("media_player", "media_play_pause", {}, { entity_id: id });
+    setEntityState(id, entityState(id) === "playing" ? "paused" : "playing");
+    patchEntityUI(id);
+  } catch {
+    state.error = `Falha no media player ${friendly(id, id)}.`;
+    render();
+  }
+}
+
+async function mediaPrevious(id) {
+  try {
+    await callService("media_player", "media_previous_track", {}, { entity_id: id });
+  } catch {
+    state.error = `Falha no media player ${friendly(id, id)}.`;
+    render();
+  }
+}
+
+function connectWebSocket() {
+  if (!state.token) return;
+  try {
+    state.ws?.close();
+  } catch {}
+  const proto = location.protocol === "https:" ? "wss" : "ws";
+  const ws = new WebSocket(`${proto}://${location.host}/api/websocket`);
+  state.ws = ws;
+  let subId = 1;
+
+  ws.onmessage = (event) => {
+    const msg = JSON.parse(event.data);
+    if (msg.type === "auth_required") {
+      ws.send(JSON.stringify({ type: "auth", access_token: state.token }));
+      return;
+    }
+    if (msg.type === "auth_ok") {
+      ws.send(JSON.stringify({ id: subId++, type: "subscribe_events", event_type: "state_changed" }));
+      return;
+    }
+    if (msg.type === "event" && msg.event?.data?.entity_id) {
+      const id = msg.event.data.entity_id;
+      const next = msg.event.data.new_state;
+      if (next) state.entities[id] = next;
+      else delete state.entities[id];
+      patchEntityUI(id);
+      if (state.route === "home" && [ENTITY_MAP.weather, ENTITY_MAP.houseMode].includes(id)) {
+        updateHomeCameraMeta();
+      }
+    }
+  };
+
+  ws.onclose = () => {
+    setTimeout(() => {
+      if (state.token) connectWebSocket();
+    }, 3000);
+  };
+}
+
+async function bootstrap() {
+  state.token = parseToken();
+  try {
+    await loadStates();
+    connectWebSocket();
+  } catch (err) {
+    state.error = err.message;
+    state.connected = false;
+  }
+  render();
+}
+
+$$("#nav .nav-item[data-route]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    state.query = "";
+    go(btn.dataset.route);
+  });
+});
+
+searchInput?.addEventListener("keydown", (e) => {
+  if (e.key !== "Enter") return;
+  state.query = e.target.value.trim();
+  go("lights");
+});
+
+window.addEventListener("hashchange", () => go((location.hash || "#home").slice(1)));
+window.addEventListener("beforeunload", stopCameraFeeds);
+document.addEventListener("pointerup", () => {
+  const active = document.activeElement;
+  if (!active) return;
+  if (active === searchInput || active.tagName === "INPUT" || active.tagName === "TEXTAREA") return;
+  if (typeof active.blur === "function") active.blur();
+});
+
+(async () => {
+  const route = (location.hash || "#home").slice(1);
+  state.route = ROUTES.includes(route) ? route : "home";
+  await bootstrap();
+})();
+
+/* =========================================================
+   THEME (normal -> dark -> night)
+   ========================================================= */
+const THEMES = ["normal", "dark", "night"];
+function applyTheme(name) {
+  document.body.dataset.theme = name;
+  localStorage.setItem("auroraTheme", name);
+  const btn = document.getElementById("themeBtn");
+  if (btn) {
+    btn.dataset.themeMode = name;
+    btn.title = name === "normal"
+      ? "Modo claro (atual) — clique para escuro"
+      : name === "dark"
+      ? "Modo escuro (atual) — clique para noturno"
+      : "Modo noturno (atual) — clique para voltar";
+  }
+}
+function cycleTheme() {
+  const cur = document.body.dataset.theme || "normal";
+  const next = THEMES[(THEMES.indexOf(cur) + 1) % THEMES.length];
+  applyTheme(next);
+}
+document.getElementById("themeBtn")?.addEventListener("click", cycleTheme);
+applyTheme(localStorage.getItem("auroraTheme") || "normal");
+
+/* =========================================================
+   MODAL — universal popup
+   ========================================================= */
+const modalEl = document.getElementById("modal");
+const sheetEl = document.getElementById("modalSheet");
+
+function openModal(html) {
+  if (!modalEl || !sheetEl) return;
+  sheetEl.innerHTML = html;
+  modalEl.classList.add("is-open");
+  modalEl.setAttribute("aria-hidden", "false");
+  bindModalInteractions();
+}
+function closeModal() {
+  if (!modalEl) return;
+  modalEl.classList.remove("is-open");
+  modalEl.setAttribute("aria-hidden", "true");
+  sheetEl.innerHTML = "";
+}
+modalEl?.addEventListener("click", (e) => {
+  if (e.target.matches("[data-modal-close]") || e.target === modalEl) closeModal();
+});
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); });
+
+const COLOR_SWATCHES = [
+  { name: "Quente",   rgb: [255, 180, 107] },
+  { name: "Branco",   rgb: [255, 244, 229] },
+  { name: "Frio",     rgb: [200, 220, 255] },
+  { name: "Âmbar",    rgb: [255, 160,  60] },
+  { name: "Vermelho", rgb: [255,  70,  70] },
+  { name: "Rosa",     rgb: [255, 105, 180] },
+  { name: "Roxo",     rgb: [170, 100, 255] },
+  { name: "Azul",     rgb: [ 80, 140, 255] },
+  { name: "Ciano",    rgb: [ 80, 220, 230] },
+  { name: "Verde",    rgb: [110, 230, 130] },
+  { name: "Lime",     rgb: [214, 255,  77] },
+  { name: "Amarelo",  rgb: [255, 230,  90] },
+];
+const COLOR_TEMPS = [
+  { name: "2200K", k: 2200, hex: "#ffb46b" },
+  { name: "2700K", k: 2700, hex: "#ffd29a" },
+  { name: "4000K", k: 4000, hex: "#fff4e5" },
+  { name: "6500K", k: 6500, hex: "#dfe8ff" },
+];
+
+function supportsBrightness(id) {
+  const e = entity(id);
+  return id.startsWith("light.") && (e?.attributes?.supported_color_modes?.length || e?.attributes?.brightness != null || true);
+}
+function supportsColor(id) {
+  const e = entity(id);
+  const modes = e?.attributes?.supported_color_modes || [];
+  return id.startsWith("light.") && modes.some((m) => ["hs", "rgb", "rgbw", "rgbww", "xy"].includes(m));
+}
+function supportsColorTemp(id) {
+  const e = entity(id);
+  const modes = e?.attributes?.supported_color_modes || [];
+  return id.startsWith("light.") && (modes.includes("color_temp") || modes.length === 0);
+}
+
+function openLightModal(id) {
+  const on = isOn(id);
+  const pct = brightnessPct(id) ?? (on ? 80 : 0);
+  const isLight = id.startsWith("light.");
+  const showColor = isLight && supportsColor(id);
+  const showTemp  = isLight && supportsColorTemp(id);
+  const showBright= isLight && supportsBrightness(id);
+
+  const colorBlock = showColor ? `
+    <div class="modal__section">
+      <div class="modal__label">Cor <b>RGB</b></div>
+      <div class="color-grid" data-color-grid>
+        ${COLOR_SWATCHES.map((c) => `
+          <button class="color-swatch" data-rgb="${c.rgb.join(',')}"
+            style="background:rgb(${c.rgb.join(',')})" title="${c.name}"></button>
+        `).join("")}
+      </div>
+    </div>` : "";
+
+  const tempBlock = showTemp ? `
+    <div class="modal__section">
+      <div class="modal__label">Temperatura de cor</div>
+      <div class="temp-row">
+        ${COLOR_TEMPS.map((t) => `
+          <button class="temp-pill" data-kelvin="${t.k}">
+            <span class="swatch" style="background:${t.hex}"></span>
+            <span>${t.name}</span>
+          </button>
+        `).join("")}
+      </div>
+    </div>` : "";
+
+  const brightBlock = showBright ? `
+    <div class="modal__section">
+      <div class="modal__label">Intensidade <b id="brightVal">${pct}%</b></div>
+      <input type="range" min="1" max="100" value="${pct}" class="bright-slider" id="brightSlider" />
+    </div>` : "";
+
+  openModal(`
+    <div class="modal__head">
+      <div>
+        <h2 class="modal__title">${friendly(id, id)}</h2>
+        <div class="modal__sub">${formatState(id)} · ${id}</div>
+      </div>
+      <button class="modal__close" data-modal-close aria-label="Fechar">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="modal-switch">
+      <span class="lbl">${on ? "Ligado" : "Desligado"}</span>
+      <button class="switch ${on ? "is-on" : ""}" data-modal-toggle="${id}"><span></span></button>
+    </div>
+    ${brightBlock}
+    ${colorBlock}
+    ${tempBlock}
+  `);
+}
+
+function openMediaModal(id) {
+  const e = entity(id);
+  const playing = entityState(id) === "playing";
+  const title = e?.attributes?.media_title || friendly(id, id);
+  const artist = e?.attributes?.media_artist || e?.attributes?.app_name || formatState(id);
+  const cover = e?.attributes?.entity_picture;
+  const vol = Math.round((e?.attributes?.volume_level ?? 0.4) * 100);
+  const initials = friendly(id, id).split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
+
+  openModal(`
+    <div class="modal__head">
+      <div>
+        <h2 class="modal__title">${friendly(id, id)}</h2>
+        <div class="modal__sub">${formatState(id)}</div>
+      </div>
+      <button class="modal__close" data-modal-close aria-label="Fechar">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="mp-cover">${cover ? `<img src="${cover}" alt="" />` : initials}</div>
+    <div class="mp-meta">
+      <div class="t">${title}</div>
+      <div class="a">${artist}</div>
+    </div>
+    <div class="mp-controls">
+      <button class="mp-btn" data-mp-prev="${id}" title="Anterior">⏮</button>
+      <button class="mp-btn mp-pp" data-mp-pp="${id}" title="Play/Pause">${playing ? "❚❚" : "▶"}</button>
+      <button class="mp-btn" data-mp-next="${id}" title="Próximo">⏭</button>
+    </div>
+    <div class="mp-vol">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9v6h4l5 4V5l-5 4H5z"/></svg>
+      <input type="range" min="0" max="100" value="${vol}" id="mpVol" />
+      <span id="mpVolVal" style="min-width:36px;text-align:right;font-variant-numeric:tabular-nums;">${vol}%</span>
+    </div>
+    <div class="modal__section">
+      <div class="modal-switch">
+        <span class="lbl">Energia</span>
+        <button class="switch ${isOn(id) ? "is-on" : ""}" data-modal-toggle="${id}"><span></span></button>
+      </div>
+    </div>
+  `);
+}
+
+function bindModalInteractions() {
+  // Toggle dentro do modal
+  sheetEl.querySelectorAll("[data-modal-toggle]").forEach((btn) => {
+    btn.onclick = async () => {
+      await toggleEntity(btn.dataset.modalToggle);
+      btn.classList.toggle("is-on", isOn(btn.dataset.modalToggle));
+      const lbl = btn.parentElement?.querySelector(".lbl");
+      if (lbl) lbl.textContent = isOn(btn.dataset.modalToggle) ? "Ligado" : "Desligado";
+    };
+  });
+  // Brightness
+  const slider = sheetEl.querySelector("#brightSlider");
+  const brightVal = sheetEl.querySelector("#brightVal");
+  if (slider) {
+    let timer;
+    slider.addEventListener("input", () => { brightVal.textContent = `${slider.value}%`; });
+    slider.addEventListener("change", async () => {
+      const id = sheetEl.querySelector("[data-modal-toggle]")?.dataset.modalToggle;
+      if (!id) return;
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        try {
+          await callService("light", "turn_on", { brightness_pct: Number(slider.value) }, { entity_id: id });
+          if (state.entities[id]) state.entities[id].attributes.brightness_pct = Number(slider.value);
+          patchEntityUI(id);
+        } catch (err) { console.error(err); }
+      }, 80);
+    });
+  }
+  // Color
+  sheetEl.querySelectorAll("[data-rgb]").forEach((sw) => {
+    sw.onclick = async () => {
+      const id = sheetEl.querySelector("[data-modal-toggle]")?.dataset.modalToggle;
+      if (!id) return;
+      const rgb = sw.dataset.rgb.split(",").map(Number);
+      sheetEl.querySelectorAll("[data-rgb]").forEach((s) => s.classList.remove("is-active"));
+      sw.classList.add("is-active");
+      try { await callService("light", "turn_on", { rgb_color: rgb }, { entity_id: id }); }
+      catch (err) { console.error(err); }
+    };
+  });
+  // Color temp
+  sheetEl.querySelectorAll("[data-kelvin]").forEach((p) => {
+    p.onclick = async () => {
+      const id = sheetEl.querySelector("[data-modal-toggle]")?.dataset.modalToggle;
+      if (!id) return;
+      const k = Number(p.dataset.kelvin);
+      sheetEl.querySelectorAll("[data-kelvin]").forEach((s) => s.classList.remove("is-active"));
+      p.classList.add("is-active");
+      try { await callService("light", "turn_on", { kelvin: k }, { entity_id: id }); }
+      catch (err) { console.error(err); }
+    };
+  });
+  // Media controls
+  sheetEl.querySelectorAll("[data-mp-pp]").forEach((b) => {
+    b.onclick = async () => {
+      const id = b.dataset.mpPp;
+      await mediaPlayPause(id);
+      b.textContent = entityState(id) === "playing" ? "❚❚" : "▶";
+    };
+  });
+  sheetEl.querySelectorAll("[data-mp-prev]").forEach((b) => {
+    b.onclick = () => mediaPrevious(b.dataset.mpPrev);
+  });
+  sheetEl.querySelectorAll("[data-mp-next]").forEach((b) => {
+    b.onclick = async () => {
+      try { await callService("media_player", "media_next_track", {}, { entity_id: b.dataset.mpNext }); }
+      catch (err) { console.error(err); }
+    };
+  });
+  const mpVol = sheetEl.querySelector("#mpVol");
+  const mpVolVal = sheetEl.querySelector("#mpVolVal");
+  if (mpVol) {
+    let vt;
+    mpVol.addEventListener("input", () => { mpVolVal.textContent = `${mpVol.value}%`; });
+    mpVol.addEventListener("change", () => {
+      const id = sheetEl.querySelector("[data-mp-pp], [data-modal-toggle]")?.dataset.mpPp
+              || sheetEl.querySelector("[data-modal-toggle]")?.dataset.modalToggle;
+      if (!id) return;
+      clearTimeout(vt);
+      vt = setTimeout(async () => {
+        try { await callService("media_player", "volume_set", { volume_level: Number(mpVol.value) / 100 }, { entity_id: id }); }
+        catch (err) { console.error(err); }
+      }, 80);
+    });
+  }
+}
+
+/* =========================================================
+   Abrir popups via click no card (sem afetar o switch)
+   ========================================================= */
+document.addEventListener("click", (e) => {
+  // ignora clique no switch (já tratado por data-toggle)
+  if (e.target.closest("[data-toggle]")) return;
+  if (e.target.closest("[data-modal-close]")) return;
+  if (e.target.closest(".modal__sheet")) return;
+
+  const card = e.target.closest("[data-entity]");
+  if (!card) return;
+  const id = card.dataset.entity;
+  if (!id) return;
+
+  // botões dentro do card que não devem abrir popup
+  if (e.target.closest("[data-script], [data-media-prev], [data-media-playpause], [data-refresh-camera], [data-route-go], [data-home-camera]")) return;
+
+  const domain = id.split(".")[0];
+  if (domain === "light" || domain === "switch") openLightModal(id);
+  else if (domain === "media_player") openMediaModal(id);
+});
