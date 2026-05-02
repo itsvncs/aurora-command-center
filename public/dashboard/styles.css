@@ -1137,6 +1137,147 @@ body[data-theme="night"] img { opacity: .55; }
 .room-card, .light-card, .player, .baby-media { cursor: pointer; }
 
 /* =========================================================
+   NOVO BOTÃO DE LUZ (substitui o switch nos cards de luz)
+   ========================================================= */
+.lightbtn {
+  position: relative;
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--glass-2);
+  border: 1px solid var(--glass-stroke);
+  color: var(--c-ink-mute);
+  cursor: pointer;
+  transition:
+    background var(--d-base) var(--ease),
+    color var(--d-base) var(--ease),
+    border-color var(--d-base) var(--ease),
+    transform var(--d-fast) var(--ease),
+    box-shadow var(--d-base) var(--ease);
+  flex: none;
+}
+.lightbtn::before {
+  content: ""; position: absolute; inset: -6px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,216,74,.55), transparent 70%);
+  opacity: 0; transition: opacity var(--d-base) var(--ease);
+  pointer-events: none; z-index: -1; filter: blur(8px);
+}
+.lightbtn svg { width: 22px; height: 22px; transition: transform var(--d-base) var(--ease); }
+.lightbtn:hover { background: var(--glass-3); color: var(--c-ink); }
+.lightbtn:active { transform: scale(.92); }
+.lightbtn.is-on {
+  background: linear-gradient(135deg, #fff4cf, #ffd84a);
+  border-color: rgba(255,216,74,.6);
+  color: #2a1e00;
+  box-shadow: 0 0 0 1px rgba(255,216,74,.4), 0 6px 22px -4px rgba(255,216,74,.55);
+  animation: bulbOn .55s var(--ease-out);
+}
+.lightbtn.is-on::before { opacity: 1; }
+.lightbtn.is-on svg { transform: scale(1.08); }
+@keyframes bulbOn {
+  0%   { transform: scale(.85); box-shadow: 0 0 0 0 rgba(255,216,74,.0); }
+  50%  { transform: scale(1.12); box-shadow: 0 0 0 12px rgba(255,216,74,.0); }
+  100% { transform: scale(1); }
+}
+.toggle-row .lightbtn { width: 42px; height: 42px; }
+.toggle-row .lightbtn svg { width: 18px; height: 18px; }
+
+/* =========================================================
+   MODOS DA CASA (chips)
+   ========================================================= */
+.house-modes {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  grid-column: span 3;
+  padding: 12px 16px; border-radius: var(--r-lg);
+  background: var(--glass-2); border: 1px solid var(--glass-stroke);
+  align-items: center;
+}
+.house-modes .lbl {
+  font-size: 12px; color: var(--c-ink-mute);
+  text-transform: uppercase; letter-spacing: .08em; margin-right: 6px;
+}
+.house-modes .chip-mode {
+  padding: 8px 16px; border-radius: var(--r-pill);
+  background: var(--glass-2); border: 1px solid var(--glass-stroke);
+  color: var(--c-ink-soft); font-size: 13px; font-weight: 500;
+  transition: all var(--d-fast) var(--ease);
+  cursor: pointer;
+}
+.house-modes .chip-mode:hover { background: var(--glass-3); color: var(--c-ink); }
+.house-modes .chip-mode.is-active {
+  background: var(--c-lime); color: #0a0c0f; border-color: transparent;
+  box-shadow: var(--shadow-glow-lime);
+}
+
+/* =========================================================
+   POPUP DE GRUPO (long-press)
+   ========================================================= */
+.group-list { display: flex; flex-direction: column; gap: 10px; }
+.group-list .toggle-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 14px; border-radius: var(--r-md);
+  background: var(--glass-2); border: 1px solid var(--glass-stroke);
+}
+.group-list .toggle-row.is-on { background: linear-gradient(135deg, rgba(255,216,74,.10), rgba(255,216,74,.02)); border-color: rgba(255,216,74,.32); }
+.group-list .nm { font-size: 14px; font-weight: 600; }
+.group-list .sb { font-size: 11px; color: var(--c-ink-mute); margin-top: 2px; }
+
+/* =========================================================
+   CÂMERA FULLSCREEN
+   ========================================================= */
+.camfs {
+  position: fixed; inset: 0; z-index: 250;
+  background: #000;
+  display: none;
+  cursor: pointer;
+}
+.camfs.is-on { display: block; animation: modalIn .25s var(--ease-out); }
+.camfs__img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: contain;
+  background: #000;
+  transition: transform 260ms var(--ease), opacity 260ms var(--ease);
+}
+.camfs__img.is-slide-out-left { transform: translateX(-6%); opacity: .15; }
+.camfs__img.is-slide-out-right { transform: translateX(6%); opacity: .15; }
+.camfs__bar {
+  position: absolute; top: 18px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 6px; padding: 6px;
+  background: rgba(0,0,0,.55); backdrop-filter: blur(14px);
+  border: 1px solid rgba(255,255,255,.1); border-radius: var(--r-pill);
+  z-index: 2;
+}
+.camfs__bar button {
+  padding: 8px 16px; border-radius: var(--r-pill);
+  background: transparent; color: #cfd3da; font-size: 13px; font-weight: 500;
+  border: 0; cursor: pointer;
+}
+.camfs__bar button.is-active { background: var(--c-lime); color: #0a0c0f; }
+.camfs__close {
+  position: absolute; top: 18px; right: 18px; z-index: 2;
+  width: 44px; height: 44px; border-radius: 50%;
+  background: rgba(0,0,0,.55); color: #fff;
+  border: 1px solid rgba(255,255,255,.12);
+  display: grid; place-items: center; cursor: pointer;
+  backdrop-filter: blur(10px);
+}
+.camfs__hint {
+  position: absolute; bottom: 22px; left: 50%; transform: translateX(-50%);
+  font-size: 11px; color: rgba(255,255,255,.4);
+  letter-spacing: .15em; text-transform: uppercase;
+}
+
+/* Avatar com foto */
+.avatar { overflow: hidden; padding: 0; }
+.avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* hero clicável */
+.hero { cursor: pointer; }
+.hero__tabs button, .hero__actions button { cursor: pointer; }
+
+
+/* =========================================================
    FAB Babytracker
    ========================================================= */
 .fab {
