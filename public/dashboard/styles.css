@@ -688,8 +688,8 @@ img, svg { display: block; max-width: 100%; }
    ========================================================= */
 .baby {
   display: grid;
-  grid-template-rows: auto 1fr;
-  gap: 18px;
+  grid-template-rows: auto 1.4fr;
+  gap: 14px;
   height: calc(100vh - var(--topbar-h) - 60px);
 }
 
