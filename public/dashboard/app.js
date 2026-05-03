@@ -1966,3 +1966,524 @@ function openSettingsModal() {
 }
 
 /* Re-exclui o card popup da entidade alarme da segurança (quando há confirm) */
+
+/* =========================================================
+   v2 — IMPROVEMENTS PACK
+   ========================================================= */
+
+/* ---------- 4 · Toasts (feedback) ---------- */
+const toastWrap = document.getElementById("toastWrap");
+function toast(msg, kind = "info", ms = 2800) {
+  if (!toastWrap) return;
+  const el = document.createElement("div");
+  el.className = `toast toast--${kind}`;
+  el.textContent = msg;
+  toastWrap.appendChild(el);
+  setTimeout(() => { el.classList.add("is-out"); setTimeout(() => el.remove(), 250); }, ms);
+}
+window.toast = toast;
+
+/* Wrap callService -> erro vira toast */
+const _origCallService = callService;
+callService = async function (...args) {
+  try { return await _origCallService(...args); }
+  catch (err) {
+    toast(`Falha: ${args[0]}.${args[1]}`, "err");
+    throw err;
+  }
+};
+
+/* ---------- 1 · Dot de modo da casa no botão ---------- */
+const HOUSE_MODE_COLORS = { Dia: "#d5ff7f", Noite: "#b39dff", Fora: "#7dd3fc", Cinema: "#ff8a9b" };
+function paintHouseDot() {
+  const btn = document.getElementById("houseBtn");
+  if (!btn) return;
+  const cur = entityState(ENTITY_MAP.houseMode, "");
+  let dot = btn.querySelector(".mode-dot");
+  if (!dot) { dot = document.createElement("span"); dot.className = "mode-dot"; btn.appendChild(dot); }
+  const color = HOUSE_MODE_COLORS[cur] || "#888";
+  dot.style.background = color;
+  dot.style.color = color;
+  btn.title = `Modo: ${cur || "—"}`;
+}
+
+/* ---------- 13 · Reconexão WS com backoff + chip ---------- */
+const connChip = document.getElementById("connChip");
+const connTxt = document.getElementById("connTxt");
+function setConn(status) {
+  if (!connChip) return;
+  connChip.classList.remove("is-warn", "is-err");
+  if (status === "ok") { connTxt.textContent = "ao vivo"; }
+  else if (status === "warn") { connChip.classList.add("is-warn"); connTxt.textContent = "reconectando…"; }
+  else { connChip.classList.add("is-err"); connTxt.textContent = "offline"; }
+}
+let wsRetry = 0;
+const _origConnectV2 = connectWebSocket;
+connectWebSocket = function () {
+  if (!state.token) { setConn("err"); return; }
+  setConn("warn");
+  _origConnectV2();
+  const ws = state.ws;
+  if (!ws) return;
+  const _open = ws.onopen;
+  ws.onopen = (e) => { _open?.(e); };
+  // monitora auth_ok
+  const _msg = ws.onmessage;
+  ws.onmessage = (event) => {
+    _msg?.(event);
+    try {
+      const m = JSON.parse(event.data);
+      if (m.type === "auth_ok") { setConn("ok"); wsRetry = 0; }
+      if (m.type === "auth_invalid") { setConn("err"); toast("Token inválido", "err"); }
+    } catch {}
+  };
+  const _close = ws.onclose;
+  ws.onclose = (e) => {
+    setConn("warn");
+    wsRetry = Math.min(wsRetry + 1, 6);
+    const delay = Math.min(30000, 1500 * Math.pow(1.6, wsRetry));
+    setTimeout(() => { if (state.token) connectWebSocket(); else setConn("err"); }, delay);
+  };
+  ws.onerror = () => setConn("warn");
+};
+
+/* ---------- 17 · Transição entre rotas ---------- */
+const _origGoV2 = go;
+go = function (route) {
+  view.classList.remove("is-routing");
+  // forçar reflow
+  void view.offsetWidth;
+  _origGoV2(route);
+  view.classList.add("is-routing");
+  // dot no botão de modo após qualquer render
+  setTimeout(paintHouseDot, 0);
+};
+
+/* ---------- 19 · Pulse de mudança ---------- */
+const _patch2 = patchEntityUI;
+const lastEntityState = {};
+patchEntityUI = function (id) {
+  const prev = lastEntityState[id];
+  const next = isOn(id);
+  _patch2(id);
+  lastEntityState[id] = next;
+  if (prev === undefined || prev === next) return;
+  document.querySelectorAll(`[data-entity="${id}"]`).forEach((card) => {
+    if (!card.classList.contains("card") && !card.classList.contains("room-card")) return;
+    const cls = id.includes("porta") || id.includes("alarm") ? "flash-alert" : (next ? "flash-on" : "flash-off");
+    card.classList.remove("flash-on", "flash-off", "flash-alert");
+    void card.offsetWidth;
+    card.classList.add(cls);
+    setTimeout(() => card.classList.remove(cls), 1000);
+  });
+  if (id === ENTITY_MAP.houseMode) paintHouseDot();
+};
+
+/* ---------- 2 · Slide to confirm (substitui openConfirm) ---------- */
+const _origOpenConfirm = openConfirm;
+openConfirm = function (title, message, onConfirm) {
+  openModal(`
+    <div class="modal__head">
+      <div>
+        <h2 class="modal__title">${title}</h2>
+        <div class="modal__sub">${message}</div>
+      </div>
+      <button class="modal__close" data-modal-close aria-label="Fechar">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="slide-confirm" id="slideConfirm">
+      <div class="slide-confirm__fill" id="scFill"></div>
+      <div class="slide-confirm__track">Arraste para confirmar →</div>
+      <div class="slide-confirm__handle" id="scHandle">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+      </div>
+    </div>
+  `);
+  const sc = sheetEl.querySelector("#slideConfirm");
+  const handle = sheetEl.querySelector("#scHandle");
+  const fill = sheetEl.querySelector("#scFill");
+  let dragging = false, startX = 0, x = 0;
+  const max = () => sc.offsetWidth - 60;
+  const onDown = (e) => { dragging = true; startX = (e.touches?.[0]?.clientX ?? e.clientX); handle.style.transition = "none"; };
+  const onMove = (e) => {
+    if (!dragging) return;
+    const cx = (e.touches?.[0]?.clientX ?? e.clientX);
+    x = Math.max(0, Math.min(max(), cx - startX));
+    handle.style.transform = `translateX(${x}px)`;
+    fill.style.width = `${x + 56}px`;
+    if (x > max() * 0.85) sc.classList.add("is-armed"); else sc.classList.remove("is-armed");
+  };
+  const onUp = async () => {
+    if (!dragging) return; dragging = false;
+    handle.style.transition = "transform .25s ease";
+    if (x >= max() * 0.92) {
+      haptic(25);
+      closeModal();
+      try { await onConfirm(); toast("Confirmado", "ok"); } catch { toast("Falhou", "err"); }
+    } else {
+      x = 0; handle.style.transform = "translateX(0)"; fill.style.width = "0";
+      sc.classList.remove("is-armed");
+    }
+  };
+  handle.addEventListener("pointerdown", onDown);
+  window.addEventListener("pointermove", onMove);
+  window.addEventListener("pointerup", onUp, { once: false });
+  handle.addEventListener("touchstart", onDown, { passive: true });
+  window.addEventListener("touchmove", onMove, { passive: true });
+  window.addEventListener("touchend", onUp);
+};
+
+/* ---------- 6 · Calendário / Rotinas ---------- */
+async function fetchCalendars() {
+  try {
+    const cals = await haFetch("/api/calendars");
+    if (!Array.isArray(cals) || !cals.length) return [];
+    const start = new Date().toISOString();
+    const end = new Date(Date.now() + 7 * 86400000).toISOString();
+    const all = await Promise.all(cals.map((c) =>
+      haFetch(`/api/calendars/${c.entity_id}?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`).catch(() => [])
+    ));
+    return all.flat().sort((a, b) => (a.start?.dateTime || a.start?.date || "").localeCompare(b.start?.dateTime || b.start?.date || ""));
+  } catch { return []; }
+}
+async function openCalendarModal() {
+  openModal(`
+    <div class="modal__head">
+      <div><h2 class="modal__title">Próximos eventos</h2><div class="modal__sub">7 dias</div></div>
+      <button class="modal__close" data-modal-close aria-label="Fechar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="notif-list" id="calList"><div class="notif-empty">Carregando…</div></div>
+  `);
+  const list = sheetEl.querySelector("#calList");
+  const evts = await fetchCalendars();
+  if (!evts.length) { list.innerHTML = `<div class="notif-empty">Sem eventos</div>`; return; }
+  list.innerHTML = evts.slice(0, 30).map((ev) => {
+    const when = new Date(ev.start?.dateTime || ev.start?.date);
+    const ts = when.toLocaleString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+    return `<div class="notif-item"><div class="ic"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg></div>
+      <div class="body"><div class="t">${ev.summary || "Evento"}</div><div class="m">${ev.description || ""}</div><div class="ts">${ts}</div></div></div>`;
+  }).join("");
+}
+
+/* ---------- 7 · Lista de compras (todo) ---------- */
+async function fetchTodos() {
+  try {
+    const states = await haFetch("/api/states");
+    return states.filter((s) => s.entity_id.startsWith("todo."));
+  } catch { return []; }
+}
+async function openTodoModal() {
+  openModal(`
+    <div class="modal__head">
+      <div><h2 class="modal__title">Listas</h2><div class="modal__sub">Compras e tarefas</div></div>
+      <button class="modal__close" data-modal-close aria-label="Fechar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div id="todoBody"><div class="notif-empty">Carregando…</div></div>
+  `);
+  const body = sheetEl.querySelector("#todoBody");
+  const lists = await fetchTodos();
+  if (!lists.length) { body.innerHTML = `<div class="notif-empty">Nenhuma lista todo configurada no HA</div>`; return; }
+  body.innerHTML = lists.map((l) => `
+    <div class="modal__section">
+      <div class="modal__label">${l.attributes?.friendly_name || l.entity_id}</div>
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <input class="todo-input" data-list="${l.entity_id}" placeholder="Adicionar item…" style="flex:1;padding:10px 14px;border-radius:12px;border:1px solid var(--glass-stroke);background:var(--glass-2);color:inherit;outline:none;" />
+        <button class="btn btn--lime" data-add="${l.entity_id}">+</button>
+      </div>
+      <div class="muted" style="font-size:13px;">${l.state} pendentes</div>
+    </div>
+  `).join("");
+  sheetEl.querySelectorAll("[data-add]").forEach((b) => {
+    b.onclick = async () => {
+      const id = b.dataset.add;
+      const inp = sheetEl.querySelector(`.todo-input[data-list="${id}"]`);
+      const v = inp?.value.trim(); if (!v) return;
+      try {
+        await callService("todo", "add_item", { item: v }, { entity_id: id });
+        inp.value = ""; toast("Adicionado", "ok");
+      } catch {}
+    };
+  });
+}
+
+/* ---------- 8 · Forecast popup ---------- */
+async function openForecastModal() {
+  openModal(`
+    <div class="modal__head">
+      <div><h2 class="modal__title">Previsão</h2><div class="modal__sub">7 dias · Taubaté</div></div>
+      <button class="modal__close" data-modal-close aria-label="Fechar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div id="fcBody"><div class="notif-empty">Carregando…</div></div>
+  `);
+  let forecast = [];
+  try {
+    const r = await haFetch(`/api/services/weather/get_forecasts?return_response=true`, {
+      method: "POST",
+      body: JSON.stringify({ entity_id: ENTITY_MAP.weather, type: "daily" }),
+    });
+    forecast = r?.service_response?.[ENTITY_MAP.weather]?.forecast || [];
+  } catch {}
+  if (!forecast.length) {
+    const ent = entity(ENTITY_MAP.weather);
+    forecast = ent?.attributes?.forecast || [];
+  }
+  const body = sheetEl.querySelector("#fcBody");
+  if (!forecast.length) { body.innerHTML = `<div class="notif-empty">Sem dados de previsão</div>`; return; }
+  body.innerHTML = `<div class="fc-grid">${forecast.slice(0, 7).map((f) => {
+    const d = new Date(f.datetime || f.date || Date.now());
+    const wd = d.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", "");
+    return `<div class="fc-day"><div class="d">${wd}</div><div class="t">${Math.round(f.temperature ?? 0)}°</div><div class="r">${f.precipitation ? Math.round(f.precipitation) + "mm" : "—"}</div></div>`;
+  }).join("")}</div>`;
+}
+document.querySelector(".weather-chip")?.addEventListener("click", openForecastModal);
+document.querySelector(".weather-chip")?.style.setProperty("cursor", "pointer");
+
+/* ---------- 9 · Intercom (TTS) ---------- */
+async function openIntercomModal() {
+  const speakers = ["media_player.echo_pop_de_vinicius", "media_player.echo_quarto"];
+  openModal(`
+    <div class="modal__head">
+      <div><h2 class="modal__title">Intercom</h2><div class="modal__sub">Mensagem por voz</div></div>
+      <button class="modal__close" data-modal-close aria-label="Fechar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="modal__section">
+      <textarea id="ttsMsg" placeholder="Ex: Jantar pronto!" style="width:100%;min-height:90px;padding:12px;border-radius:14px;border:1px solid var(--glass-stroke);background:var(--glass-2);color:inherit;outline:none;resize:vertical;"></textarea>
+    </div>
+    <div class="modal__section">
+      <div class="modal__label">Caixas</div>
+      <div class="temp-row" id="ttsSpk">
+        ${speakers.map((s) => `<button class="temp-pill is-active" data-spk="${s}">${friendly(s, s)}</button>`).join("")}
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;">
+      ${["Jantar pronto!","Estou indo!","Esther dormindo, silêncio."].map((q) => `<button class="btn" data-quick="${q}">${q}</button>`).join("")}
+    </div>
+    <div style="margin-top:14px;"><button class="btn btn--lime" id="ttsSend">Enviar</button></div>
+  `);
+  sheetEl.querySelectorAll("[data-spk]").forEach((b) => b.onclick = () => b.classList.toggle("is-active"));
+  sheetEl.querySelectorAll("[data-quick]").forEach((b) => b.onclick = () => sheetEl.querySelector("#ttsMsg").value = b.dataset.quick);
+  sheetEl.querySelector("#ttsSend").onclick = async () => {
+    const msg = sheetEl.querySelector("#ttsMsg").value.trim();
+    const targets = Array.from(sheetEl.querySelectorAll("[data-spk].is-active")).map((b) => b.dataset.spk);
+    if (!msg || !targets.length) return;
+    try {
+      await callService("tts", "speak", { message: msg, media_player_entity_id: targets, cache: false }, { entity_id: "tts.google_translate_en_com" }).catch(async () => {
+        // fallback antigo
+        await Promise.allSettled(targets.map((t) => callService("notify", "alexa_media", { message: msg, target: t, data: { type: "tts" } })));
+      });
+      toast("Mensagem enviada", "ok"); closeModal();
+    } catch {}
+  };
+}
+
+/* ---------- 10 · Sparkline sono baby ---------- */
+async function injectBabySparkline() {
+  if (state.route !== "baby") return;
+  const card = view.querySelector(".baby-status");
+  if (!card || card.querySelector(".baby-sleep-spark")) return;
+  const vals = await fetchHistory(ENTITY_MAP.baby.occupied, 24 * 7).catch(() => []);
+  // converter on/off em 1/0 — fetchHistory só retorna numéricos, então busco bruto
+  try {
+    const start = new Date(Date.now() - 7 * 86400000).toISOString();
+    const data = await haFetch(`/api/history/period/${encodeURIComponent(start)}?filter_entity_id=${ENTITY_MAP.baby.occupied}&minimal_response=true`);
+    const pts = data?.[0]?.map((p) => p.state === "on" ? 1 : 0) || [];
+    if (!pts.length) return;
+    // agrupar por dia (média)
+    const days = 7;
+    const bucketSize = Math.max(1, Math.floor(pts.length / days));
+    const buckets = [];
+    for (let i = 0; i < days; i++) {
+      const slice = pts.slice(i * bucketSize, (i + 1) * bucketSize);
+      buckets.push(slice.length ? slice.reduce((a, b) => a + b, 0) / slice.length : 0);
+    }
+    const w = 320, h = 50;
+    const step = w / (buckets.length - 1 || 1);
+    const line = buckets.map((v, i) => `${i === 0 ? "M" : "L"}${(i * step).toFixed(1)} ${(h - v * h).toFixed(1)}`).join(" ");
+    const area = `${line} L${w} ${h} L0 ${h} Z`;
+    card.insertAdjacentHTML("beforeend",
+      `<div style="font-size:11px;color:var(--c-ink-mute);margin-top:10px;">Ocupação 7 dias</div>
+       <svg class="baby-sleep-spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+         <path class="area" d="${area}"/><path d="${line}"/>
+       </svg>`);
+  } catch {}
+}
+
+/* ---------- 11 · Timer mamada / troca ---------- */
+const BABY_LOG_KEY = "auroraBabyLog";
+function babyLogGet() { try { return JSON.parse(localStorage.getItem(BABY_LOG_KEY) || "{}"); } catch { return {}; } }
+function babyLogSet(k) {
+  const log = babyLogGet(); log[k] = Date.now();
+  localStorage.setItem(BABY_LOG_KEY, JSON.stringify(log));
+  // manda pro HA se input_datetime existir
+  const map = { feed: "input_datetime.esther_ultima_mamada", diaper: "input_datetime.esther_ultima_troca", sleep: "input_datetime.esther_ultimo_sono" };
+  if (map[k]) callService("input_datetime", "set_datetime", { timestamp: Math.floor(Date.now() / 1000) }, { entity_id: map[k] }).catch(() => {});
+}
+function timeAgo(ts) {
+  if (!ts) return "—";
+  const min = Math.floor((Date.now() - ts) / 60000);
+  if (min < 60) return `${min}min`;
+  const h = Math.floor(min / 60); return `${h}h${min % 60 ? ` ${min % 60}m` : ""}`;
+}
+function injectBabyTimers() {
+  if (state.route !== "baby") return;
+  const ctrls = view.querySelector(".baby-ctrls");
+  if (!ctrls || ctrls.querySelector(".baby-timer-row")) return;
+  const log = babyLogGet();
+  const row = document.createElement("div");
+  row.className = "baby-timer-row";
+  row.innerHTML = `
+    <button data-baby-log="feed"><span class="lab">Mamada</span><span data-ago="feed">${timeAgo(log.feed)}</span></button>
+    <button data-baby-log="diaper"><span class="lab">Troca</span><span data-ago="diaper">${timeAgo(log.diaper)}</span></button>
+    <button data-baby-log="sleep"><span class="lab">Sono</span><span data-ago="sleep">${timeAgo(log.sleep)}</span></button>
+  `;
+  ctrls.appendChild(row);
+  row.querySelectorAll("[data-baby-log]").forEach((b) => {
+    b.onclick = () => {
+      const k = b.dataset.babyLog;
+      babyLogSet(k);
+      b.querySelector(`[data-ago="${k}"]`).textContent = "agora";
+      haptic(15); toast(`Registrado: ${b.querySelector(".lab").textContent.toLowerCase()}`, "ok");
+    };
+  });
+}
+
+/* ---------- 12 · Monitor noturno automático ---------- */
+const nm = document.getElementById("nightMonitor");
+const nmTime = document.getElementById("nmTime");
+const nmStatus = document.getElementById("nmStatus");
+const nmTemp = document.getElementById("nmTemp");
+const nmCamImg = document.getElementById("nmCamImg");
+let nmTimer = null, nmCamTimer = null;
+function paintNightMonitor() {
+  if (!nm.classList.contains("is-on")) return;
+  const now = new Date();
+  nmTime.textContent = now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  const occ = isOn(ENTITY_MAP.baby.occupied);
+  nm.classList.toggle("is-active", occ);
+  nmStatus.textContent = occ ? "Berço ocupado" : "Berço livre";
+  nmTemp.textContent = `${num(ENTITY_MAP.baby.temp, 0).toFixed(1)}°`;
+}
+async function refreshNmCam() {
+  try { const u = await fetchCameraFrame(ENTITY_MAP.baby.camera); if (u) nmCamImg.src = u; } catch {}
+}
+function openNightMonitor() {
+  if (state.route !== "baby") return;
+  nm.classList.add("is-on"); nm.setAttribute("aria-hidden", "false");
+  paintNightMonitor(); refreshNmCam();
+  clearInterval(nmTimer); nmTimer = setInterval(paintNightMonitor, 15000);
+  clearInterval(nmCamTimer); nmCamTimer = setInterval(refreshNmCam, 4000);
+}
+function closeNightMonitor() {
+  nm.classList.remove("is-on"); nm.setAttribute("aria-hidden", "true");
+  clearInterval(nmTimer); clearInterval(nmCamTimer);
+  nmTimer = nmCamTimer = null;
+}
+document.getElementById("nmClose")?.addEventListener("click", closeNightMonitor);
+// auto: entre 20h e 6h, na rota baby, sem interação por 60s -> ativa
+let nmIdle = null;
+function resetNmIdle() {
+  clearTimeout(nmIdle);
+  if (nm.classList.contains("is-on")) closeNightMonitor();
+  if (state.route !== "baby") return;
+  const h = new Date().getHours();
+  if (h >= 20 || h < 6) nmIdle = setTimeout(openNightMonitor, 60000);
+}
+["pointerdown","keydown","wheel"].forEach((ev) => document.addEventListener(ev, resetNmIdle));
+
+/* ---------- 14 · Cache otimista (já parcial) — toast em falha extra ---------- */
+const _origToggleEntityV2 = toggleEntity;
+toggleEntity = async function (id) {
+  const wasOn = isOn(id);
+  setEntityState(id, wasOn ? "off" : "on"); patchEntityUI(id);
+  try { await callService(id.split(".")[0], "toggle", {}, { entity_id: id }); }
+  catch {
+    setEntityState(id, wasOn ? "on" : "off"); patchEntityUI(id);
+    toast(`Falhou ${friendly(id, id)}`, "err");
+  }
+};
+
+/* ---------- 15 · Snapshot offline ---------- */
+const SNAP_KEY = "auroraSnap";
+function saveSnapshot() {
+  try { localStorage.setItem(SNAP_KEY, JSON.stringify({ t: Date.now(), e: state.entities })); } catch {}
+}
+setInterval(saveSnapshot, 30000);
+const _origLoadStates = loadStates;
+loadStates = async function () {
+  try { return await _origLoadStates(); }
+  catch (err) {
+    try {
+      const snap = JSON.parse(localStorage.getItem(SNAP_KEY) || "null");
+      if (snap?.e) { state.entities = snap.e; toast("Modo offline (snapshot)", "info"); }
+    } catch {}
+    throw err;
+  }
+};
+
+/* ---------- 16 · Logs de auditoria ---------- */
+const AUDIT_KEY = "auroraAudit";
+function auditLog(action, target, ok = true) {
+  try {
+    const arr = JSON.parse(localStorage.getItem(AUDIT_KEY) || "[]");
+    arr.unshift({ t: Date.now(), action, target, ok });
+    localStorage.setItem(AUDIT_KEY, JSON.stringify(arr.slice(0, 100)));
+  } catch {}
+}
+const _origCallServiceV3 = callService;
+callService = async function (domain, service, data, target) {
+  try {
+    const r = await _origCallServiceV3(domain, service, data, target);
+    auditLog(`${domain}.${service}`, target?.entity_id || data?.entity_id || "—", true);
+    return r;
+  } catch (e) { auditLog(`${domain}.${service}`, target?.entity_id || data?.entity_id || "—", false); throw e; }
+};
+function openAuditModal() {
+  const arr = (() => { try { return JSON.parse(localStorage.getItem(AUDIT_KEY) || "[]"); } catch { return []; } })();
+  openModal(`
+    <div class="modal__head">
+      <div><h2 class="modal__title">Auditoria</h2><div class="modal__sub">Últimas ações da dashboard</div></div>
+      <button class="modal__close" data-modal-close aria-label="Fechar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="notif-list">
+      ${arr.length ? arr.map((it) => `<div class="notif-item"><div class="ic"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div class="body"><div class="t">${it.action} ${it.ok ? "" : "❌"}</div><div class="m">${it.target}</div><div class="ts">${new Date(it.t).toLocaleString("pt-BR")}</div></div></div>`).join("") : `<div class="notif-empty">Sem registros</div>`}
+    </div>
+  `);
+}
+
+/* ---------- 18 · Skeleton no boot ---------- */
+if (!state.connected) {
+  view.innerHTML = `<div class="home-grid">${Array.from({length:6}).map(() => `<div class="card skeleton" style="height:160px;"></div>`).join("")}</div>`;
+}
+
+/* ---------- HOOKS de render para baby (10 + 11) ---------- */
+const _origRenderV2 = render;
+render = function () {
+  _origRenderV2();
+  if (state.route === "baby") { injectBabySparkline(); injectBabyTimers(); resetNmIdle(); }
+  paintHouseDot();
+};
+
+/* ---------- Atalhos extras: gear settings -> adiciona seções (calendário/listas/intercom/auditoria) ---------- */
+const _origOpenSettings = openSettingsModal;
+openSettingsModal = function () {
+  _origOpenSettings();
+  const extra = document.createElement("div");
+  extra.className = "modal__section";
+  extra.innerHTML = `
+    <div class="modal__label">Atalhos</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+      <button class="btn" id="openCalBtn">Calendário</button>
+      <button class="btn" id="openTodoBtn">Listas</button>
+      <button class="btn" id="openTtsBtn">Intercom</button>
+      <button class="btn" id="openAuditBtn">Auditoria</button>
+    </div>`;
+  sheetEl.appendChild(extra);
+  extra.querySelector("#openCalBtn").onclick = () => { closeModal(); openCalendarModal(); };
+  extra.querySelector("#openTodoBtn").onclick = () => { closeModal(); openTodoModal(); };
+  extra.querySelector("#openTtsBtn").onclick = () => { closeModal(); openIntercomModal(); };
+  extra.querySelector("#openAuditBtn").onclick = () => { closeModal(); openAuditModal(); };
+};
+
+/* ---------- init ---------- */
+setTimeout(() => { paintHouseDot(); setConn(state.connected ? "ok" : "warn"); }, 1000);

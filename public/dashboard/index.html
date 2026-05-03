@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="./styles.css?v=20260503a" />
+  <link rel="stylesheet" href="./styles.css?v=20260503b" />
 </head>
 <body>
   <!-- Background atmosférico -->
@@ -85,6 +85,7 @@
         </div>
 
         <div class="topbar__right">
+          <span class="conn-chip" id="connChip" title="Conexão Home Assistant"><span class="d"></span><span id="connTxt">conectado</span></span>
           <button class="icon-btn" id="themeBtn" title="Modo (claro / escuro / noturno)" data-theme-mode="normal">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
           </button>
@@ -138,7 +139,19 @@
     <div class="ss__hint">toque para acordar</div>
   </div>
 
-  <script src="./app.js?v=20260503a" type="module"></script>
+  <!-- Toasts -->
+  <div class="toast-wrap" id="toastWrap" aria-live="polite"></div>
+
+  <!-- Monitor noturno (baby) -->
+  <div class="night-monitor" id="nightMonitor" aria-hidden="true">
+    <button class="night-monitor__close" id="nmClose">Sair do monitor</button>
+    <span class="night-monitor__pulse"></span>
+    <div class="night-monitor__cam"><img id="nmCamImg" alt="Câmera berço" /></div>
+    <div class="night-monitor__time" id="nmTime">--:--</div>
+    <div class="night-monitor__row"><span id="nmStatus">Berço livre</span> · <span id="nmTemp">--°</span></div>
+  </div>
+
+  <script src="./app.js?v=20260503b" type="module"></script>
 </body>
 </html>
 
