@@ -139,7 +139,19 @@
     <div class="ss__hint">toque para acordar</div>
   </div>
 
-  <script src="./app.js?v=20260503a" type="module"></script>
+  <!-- Toasts -->
+  <div class="toast-wrap" id="toastWrap" aria-live="polite"></div>
+
+  <!-- Monitor noturno (baby) -->
+  <div class="night-monitor" id="nightMonitor" aria-hidden="true">
+    <button class="night-monitor__close" id="nmClose">Sair do monitor</button>
+    <span class="night-monitor__pulse"></span>
+    <div class="night-monitor__cam"><img id="nmCamImg" alt="Câmera berço" /></div>
+    <div class="night-monitor__time" id="nmTime">--:--</div>
+    <div class="night-monitor__row"><span id="nmStatus">Berço livre</span> · <span id="nmTemp">--°</span></div>
+  </div>
+
+  <script src="./app.js?v=20260503b" type="module"></script>
 </body>
 </html>
 
