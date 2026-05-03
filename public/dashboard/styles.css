@@ -1477,3 +1477,149 @@ body.is-editing .edit-banner { display: block; }
 
 /* tablet hint */
 .tip { color: var(--c-ink-mute); font-size: 12px; margin-top: 8px; }
+
+/* =========================================================
+   v2 — IMPROVEMENTS (toast, slide-confirm, mode dot, etc)
+   ========================================================= */
+
+/* 1 · Dot de modo da casa no botão da topbar */
+#houseBtn { position: relative; }
+#houseBtn .mode-dot {
+  position: absolute; right: 6px; top: 6px;
+  width: 10px; height: 10px; border-radius: 50%;
+  border: 2px solid var(--c-bg, #0b0d10);
+  box-shadow: 0 0 8px currentColor;
+  pointer-events: none;
+}
+
+/* 2 · Slide to confirm */
+.slide-confirm {
+  position: relative;
+  height: 60px; border-radius: var(--r-pill);
+  background: var(--glass-2); border: 1px solid var(--glass-stroke);
+  overflow: hidden; user-select: none; touch-action: none;
+}
+.slide-confirm__track {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; color: var(--c-ink-mute); letter-spacing: .5px;
+  pointer-events: none; font-size: 14px;
+}
+.slide-confirm__fill {
+  position: absolute; inset: 0; right: auto; width: 0;
+  background: linear-gradient(90deg, var(--c-lime), color-mix(in oklab, var(--c-lime) 50%, transparent));
+  transition: width .15s ease;
+}
+.slide-confirm__handle {
+  position: absolute; left: 4px; top: 4px; bottom: 4px; width: 52px;
+  border-radius: 50%; background: var(--c-lime); color: #0a0c0f;
+  display: grid; place-items: center; cursor: grab;
+  box-shadow: 0 6px 20px -4px rgba(214,255,77,.45);
+  transition: transform .15s ease;
+}
+.slide-confirm.is-armed .slide-confirm__handle { background: #ff5a3a; color: #fff; box-shadow: 0 6px 20px -4px rgba(255,90,58,.5); }
+.slide-confirm.is-armed .slide-confirm__fill { background: linear-gradient(90deg, #ff5a3a, #ffa07a); }
+
+/* 4 · Toast */
+.toast-wrap {
+  position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+  z-index: 200; display: flex; flex-direction: column; gap: 8px;
+  pointer-events: none;
+}
+.toast {
+  background: var(--glass-3); backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-stroke); color: var(--c-ink);
+  padding: 12px 18px; border-radius: var(--r-pill);
+  font-size: 14px; font-weight: 500;
+  box-shadow: 0 10px 30px -8px rgba(0,0,0,.4);
+  animation: toastIn .25s var(--ease-out, ease-out);
+  display: flex; align-items: center; gap: 10px;
+}
+.toast.is-out { animation: toastOut .25s ease-in forwards; }
+.toast--ok { border-color: rgba(213,255,127,.4); }
+.toast--err { border-color: rgba(255,90,58,.4); color: #ff9b88; }
+.toast--info { border-color: rgba(125,211,252,.35); }
+@keyframes toastIn { from { opacity:0; transform: translate(-50%,-12px) scale(.96); } to { opacity:1; transform: translate(-50%,0) scale(1); } }
+@keyframes toastOut { to { opacity:0; transform: translate(-50%,-12px) scale(.96); } }
+
+/* 13 · Status de conexão na topbar */
+.conn-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; padding: 4px 10px; border-radius: var(--r-pill);
+  background: var(--glass-2); border: 1px solid var(--glass-stroke);
+  margin-right: 8px; color: var(--c-ink-mute);
+}
+.conn-chip .d { width: 8px; height: 8px; border-radius: 50%; background: var(--c-lime); box-shadow: 0 0 6px currentColor; color: var(--c-lime); }
+.conn-chip.is-warn .d { background: #ffd84a; color: #ffd84a; animation: pulseDot 1.2s infinite; }
+.conn-chip.is-err  .d { background: #ff5a3a; color: #ff5a3a; animation: pulseDot 1.2s infinite; }
+@keyframes pulseDot { 50% { opacity: .35; } }
+
+/* 17 · Transição entre rotas */
+.view.is-routing { animation: routeIn .22s var(--ease-out, ease-out); }
+@keyframes routeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* 18 · Skeleton */
+.skeleton {
+  background: linear-gradient(90deg, var(--glass-2), var(--glass-3), var(--glass-2));
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+  border-radius: 12px;
+}
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+/* 19 · Pulse de mudança de estado */
+.card.flash-on  { animation: flashOn .9s ease-out; }
+.card.flash-off { animation: flashOff .9s ease-out; }
+.card.flash-alert { animation: flashAlert .9s ease-out; }
+@keyframes flashOn  { 0% { box-shadow: 0 0 0 0 rgba(213,255,127,.55); } 100% { box-shadow: 0 0 0 18px rgba(213,255,127,0); } }
+@keyframes flashOff { 0% { box-shadow: 0 0 0 0 rgba(255,255,255,.25); } 100% { box-shadow: 0 0 0 18px rgba(255,255,255,0); } }
+@keyframes flashAlert { 0% { box-shadow: 0 0 0 0 rgba(255,90,58,.55); } 100% { box-shadow: 0 0 0 18px rgba(255,90,58,0); } }
+
+/* 12 · Monitor noturno */
+.night-monitor {
+  position: fixed; inset: 0; z-index: 150;
+  background: #000; color: #ff8b6b; display: none;
+  padding: 24px; flex-direction: column;
+}
+.night-monitor.is-on { display: flex; }
+.night-monitor__time { font-family: var(--f-display); font-size: 56px; opacity: .9; margin-top: auto; }
+.night-monitor__row { display: flex; gap: 12px; margin-top: 6px; opacity: .6; font-size: 14px; }
+.night-monitor__cam { flex: 1; margin-top: 16px; border-radius: 18px; overflow: hidden; opacity: .25; }
+.night-monitor__cam img { width: 100%; height: 100%; object-fit: cover; }
+.night-monitor__pulse {
+  position: absolute; right: 24px; top: 24px;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: #ff5a3a; box-shadow: 0 0 16px #ff5a3a;
+  animation: pulseDot 1.4s infinite;
+  display: none;
+}
+.night-monitor.is-active .night-monitor__pulse { display: block; }
+.night-monitor__close {
+  position: absolute; top: 24px; left: 24px;
+  background: transparent; color: inherit; border: 1px solid rgba(255,139,107,.3);
+  padding: 8px 14px; border-radius: var(--r-pill); font-size: 12px; cursor: pointer;
+}
+
+/* 10 · Sparkline na baby */
+.baby-sleep-spark { width: 100%; height: 50px; margin-top: 8px; }
+.baby-sleep-spark path { fill: none; stroke: var(--c-rose, #ff8a9b); stroke-width: 2; }
+.baby-sleep-spark .area { fill: rgba(255,138,155,.15); stroke: none; }
+
+/* 11 · Timer baby */
+.baby-timer-row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.baby-timer-row button {
+  flex: 1; min-width: 100px; padding: 10px 12px; border-radius: 14px;
+  background: var(--glass-2); border: 1px solid var(--glass-stroke); color: var(--c-ink);
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  display: flex; flex-direction: column; gap: 2px; align-items: flex-start;
+}
+.baby-timer-row button .lab { color: var(--c-ink-mute); font-size: 11px; font-weight: 400; }
+.baby-timer-row button:hover { background: var(--glass-3); }
+
+/* 8 · Forecast popup grid */
+.fc-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 8px; }
+.fc-day { background: var(--glass-2); border-radius: 14px; padding: 10px; text-align: center; font-size: 12px; }
+.fc-day .d { font-weight: 700; }
+.fc-day .t { font-size: 16px; margin-top: 4px; }
+.fc-day .r { color: var(--c-cyan); font-size: 11px; }
+
