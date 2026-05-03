@@ -1393,6 +1393,8 @@ body[data-theme="night"] .ss__time {
 .scene-tile[data-scene="cinema"] .ic   { background: rgba(255,138,155,.15); color: var(--c-rose); }
 .scene-tile[data-scene="wakeup"] .ic   { background: rgba(255,216,74,.15); color: var(--c-amber); }
 .scene-tile[data-scene="leave"] .ic    { background: rgba(125,211,252,.15); color: var(--c-cyan); }
+.scene-tile.is-active { border-color: var(--c-lime); background: color-mix(in oklab, var(--c-lime) 12%, transparent); }
+.scene-tile.is-active .ic { background: rgba(213,255,127,.18); color: var(--c-lime); }
 
 /* =========================================================
    NOTIFICAÇÕES (lista)
