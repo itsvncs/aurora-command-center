@@ -354,10 +354,6 @@ function renderHome() {
           <div class="hero__bottom"><div><h3 class="hero__title">Casa</h3><div class="hero__meta" data-home-camera-meta>${cam.label} · ${condition} · ${temp}°C · modo ${houseCurrent}</div></div><div class="hero__actions"><button class="btn btn--ghost" data-route-go="baby">Babytracker</button></div></div>
         </div>
       </section>
-      <div class="house-modes" data-house-modes>
-        <span class="lbl">Modo da casa</span>
-        ${houseOptions.map((opt) => `<button class="chip-mode ${opt === houseCurrent ? "is-active" : ""}" data-house-mode="${opt}">${opt}</button>`).join("")}
-      </div>
       ${roomCard(ENTITY_MAP.groups.sala, "Sala")}
       ${roomCard(ENTITY_MAP.groups.cozinha, "Cozinha")}
       ${roomCard(ENTITY_MAP.groups.servicos, "Serviços")}
@@ -1170,6 +1166,49 @@ function openScenesModal() {
   });
 }
 document.getElementById("scenesBtn")?.addEventListener("click", () => { haptic(8); openScenesModal(); });
+
+function openHouseModeModal() {
+  const ent = entity(ENTITY_MAP.houseMode);
+  const opts = ent?.attributes?.options || ["Dia", "Noite", "Fora", "Cinema"];
+  const cur = ent?.state || opts[0];
+  const ICONS = {
+    Dia: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/>',
+    Noite: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
+    Fora: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
+    Cinema: '<rect x="2" y="6" width="20" height="12" rx="2"/><path d="M8 22h8M12 18v4"/>',
+  };
+  openModal(`
+    <div class="modal__head">
+      <div>
+        <h2 class="modal__title">Modo da casa</h2>
+        <div class="modal__sub">Atual: ${cur}</div>
+      </div>
+      <button class="modal__close" data-modal-close aria-label="Fechar">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="scenes-grid">
+      ${opts.map((opt) => `
+        <button class="scene-tile ${opt === cur ? "is-active" : ""}" data-house-mode="${opt}">
+          <div class="ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[opt] || '<circle cx="12" cy="12" r="9"/>'}</svg></div>
+          <div><div class="nm">${opt}</div><div class="sb">${opt === cur ? "Ativo agora" : "Selecionar"}</div></div>
+        </button>
+      `).join("")}
+    </div>
+  `);
+  sheetEl.querySelectorAll("[data-house-mode]").forEach((btn) => {
+    btn.onclick = async () => {
+      const opt = btn.dataset.houseMode;
+      haptic(12);
+      try {
+        await callService("input_select", "select_option", { option: opt }, { entity_id: ENTITY_MAP.houseMode });
+        setEntityState(ENTITY_MAP.houseMode, opt);
+      } catch (err) { console.error(err); }
+      closeModal();
+    };
+  });
+}
+document.getElementById("houseBtn")?.addEventListener("click", () => { haptic(8); openHouseModeModal(); });
 
 /* =========================================================
    CONFIRMAÇÃO (alarme / porta / sair)
