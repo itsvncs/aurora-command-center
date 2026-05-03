@@ -2464,10 +2464,88 @@ render = function () {
   paintHouseDot();
 };
 
-/* ---------- Atalhos extras: gear settings -> adiciona seções (calendário/listas/intercom/auditoria) ---------- */
+/* ---------- Cores do tema (accent) ---------- */
+const ACCENT_PRESETS = [
+  { id: "lime",    name: "Lima",     accent: "#d6ff4d", soft: "#b8e840", baby: "#ff8a9b" },
+  { id: "cyan",    name: "Ciano",    accent: "#7dd3fc", soft: "#38bdf8", baby: "#ff8a9b" },
+  { id: "violet",  name: "Violeta",  accent: "#b39dff", soft: "#8b5cf6", baby: "#ff8a9b" },
+  { id: "rose",    name: "Rosa",     accent: "#ff8a9b", soft: "#ff5d77", baby: "#d6ff4d" },
+  { id: "amber",   name: "Âmbar",    accent: "#ffd84a", soft: "#f5b800", baby: "#ff8a9b" },
+  { id: "emerald", name: "Esmeralda",accent: "#5ee2a0", soft: "#2dc97f", baby: "#ff8a9b" },
+  { id: "coral",   name: "Coral",    accent: "#ff7a59", soft: "#ff5a3a", baby: "#7dd3fc" },
+];
+function hexToRgb(h) {
+  const m = h.replace("#", "");
+  const v = m.length === 3 ? m.split("").map(c=>c+c).join("") : m;
+  const n = parseInt(v, 16);
+  return [(n>>16)&255, (n>>8)&255, n&255];
+}
+function applyAccent(cfg) {
+  const accent = cfg.accent;
+  const soft = cfg.soft || cfg.accent;
+  const baby = cfg.baby || "#ff8a9b";
+  const [r, g, b] = hexToRgb(accent);
+  const root = document.documentElement.style;
+  root.setProperty("--c-lime", accent);
+  root.setProperty("--c-lime-soft", soft);
+  root.setProperty("--c-rose", baby);
+  root.setProperty("--shadow-glow-lime",
+    `0 0 0 1px rgba(${r},${g},${b},.35), 0 10px 40px -10px rgba(${r},${g},${b},.45)`);
+  localStorage.setItem("auroraAccent", JSON.stringify(cfg));
+}
+(function initAccent() {
+  try {
+    const saved = JSON.parse(localStorage.getItem("auroraAccent") || "null");
+    if (saved && saved.accent) applyAccent(saved);
+  } catch {}
+})();
+
+/* ---------- Atalhos extras: gear settings -> adiciona seções (calendário/listas/intercom/auditoria/cores) ---------- */
 const _origOpenSettings = openSettingsModal;
 openSettingsModal = function () {
   _origOpenSettings();
+
+  // Cores do tema
+  const saved = (() => { try { return JSON.parse(localStorage.getItem("auroraAccent") || "null"); } catch { return null; } })();
+  const currentAccent = saved?.accent || "#d6ff4d";
+  const colorSec = document.createElement("div");
+  colorSec.className = "modal__section";
+  colorSec.innerHTML = `
+    <div class="modal__label">Cores do tema</div>
+    <div class="temp-row" id="accentPresets" style="flex-wrap:wrap;">
+      ${ACCENT_PRESETS.map(p => `
+        <button class="temp-pill" data-accent="${p.id}" ${currentAccent.toLowerCase()===p.accent.toLowerCase()?'style="outline:2px solid '+p.accent+';"':''}>
+          <span class="swatch" style="background:${p.accent}"></span>
+          <span>${p.name}</span>
+        </button>`).join("")}
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap;">
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--c-ink-soft);">
+        Personalizado:
+        <input type="color" id="accentCustom" value="${currentAccent}" style="width:42px;height:32px;border:none;background:transparent;cursor:pointer;" />
+      </label>
+      <button class="btn" id="accentReset">Restaurar padrão</button>
+    </div>`;
+  sheetEl.appendChild(colorSec);
+  colorSec.querySelectorAll("[data-accent]").forEach(b => {
+    b.onclick = () => {
+      const p = ACCENT_PRESETS.find(x => x.id === b.dataset.accent);
+      if (p) { applyAccent(p); closeModal(); openSettingsModal(); }
+    };
+  });
+  colorSec.querySelector("#accentCustom").oninput = (e) => {
+    applyAccent({ accent: e.target.value, soft: e.target.value, baby: "#ff8a9b" });
+  };
+  colorSec.querySelector("#accentReset").onclick = () => {
+    localStorage.removeItem("auroraAccent");
+    document.documentElement.style.removeProperty("--c-lime");
+    document.documentElement.style.removeProperty("--c-lime-soft");
+    document.documentElement.style.removeProperty("--c-rose");
+    document.documentElement.style.removeProperty("--shadow-glow-lime");
+    closeModal(); openSettingsModal();
+  };
+
+  // Atalhos
   const extra = document.createElement("div");
   extra.className = "modal__section";
   extra.innerHTML = `
