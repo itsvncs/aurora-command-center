@@ -688,7 +688,7 @@ img, svg { display: block; max-width: 100%; }
    ========================================================= */
 .baby {
   display: grid;
-  grid-template-rows: auto 1.4fr;
+  grid-template-rows: auto 1fr;
   gap: 14px;
   height: calc(100vh - var(--topbar-h) - 60px);
 }
@@ -696,28 +696,39 @@ img, svg { display: block; max-width: 100%; }
 .baby__row1 {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 16px;
+  gap: 12px;
 }
 
 @media (max-width: 1400px) {
-  .baby__row1 { grid-template-columns: repeat(3, 1fr); }
-  .baby__row1 > :nth-child(4) { grid-column: span 1; }
-  .baby__row1 > :nth-child(4),
-  .baby__row1 > :nth-child(5) { /* 3 + 2 */ }
+  .baby__row1 { grid-template-columns: repeat(5, 1fr); gap: 10px; }
 }
 @media (max-width: 1080px) {
-  .baby__row1 { grid-template-columns: repeat(2, 1fr); }
-  .baby__row1 > :nth-child(5) { grid-column: span 2; }
+  .baby__row1 { grid-template-columns: repeat(5, 1fr); gap: 8px; }
 }
 @media (max-width: 720px) {
-  .baby__row1 { grid-template-columns: 1fr; }
-  .baby__row1 > :nth-child(5) { grid-column: span 1; }
+  .baby__row1 { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .baby__row1 > :nth-child(5) { grid-column: span 2; }
 }
 
 .baby-card {
-  display: grid; gap: 10px;
-  min-height: 160px;
-  padding: 16px;
+  display: grid; gap: 8px;
+  min-height: 0;
+  padding: 12px;
+}
+@media (max-width: 1280px) {
+  .baby-card { padding: 10px; gap: 6px; }
+  .baby-card .ttl { font-size: 12px; }
+  .baby-card .sub { font-size: 11px; }
+  .baby-card .card-icon { transform: scale(.85); }
+  .baby-temp .ring { width: 72px !important; height: 72px !important; }
+  .baby-temp .ring b { font-size: 16px !important; }
+  .baby-status > div > div[style] { font-size: 20px !important; }
+  .baby-noise .wave, .baby-noise .wave svg { height: 24px; }
+  .baby-media .ctrls .pp { width: 34px; height: 34px; }
+  .baby-ctrls .toggle-row { padding: 6px 8px; }
+  .baby-ctrls .toggle-row + .toggle-row { margin-top: 5px; }
+  .baby-ctrls .toggle-row .nm { font-size: 12px; }
+  .baby-ctrls .toggle-row .sb { font-size: 10px; }
 }
 .baby-card .head { display: flex; justify-content: space-between; align-items: center; }
 .baby-card .ttl { font-family: var(--f-display); font-size: 14px; font-weight: 600; color: var(--c-ink); letter-spacing: 0; text-transform: none; }
