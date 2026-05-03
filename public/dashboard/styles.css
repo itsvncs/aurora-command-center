@@ -881,7 +881,7 @@ img, svg { display: block; max-width: 100%; }
   .climate-grid { grid-template-columns: 1.4fr 1fr 1fr; }
   .media-grid { grid-template-columns: 1.3fr 1fr 1fr; }
   .sec-grid { grid-template-columns: 2fr 1fr; }
-  .baby__row1 { grid-template-columns: repeat(5, 1fr); }
+  .baby__row1 { grid-template-columns: repeat(4, 1fr); }
   .view { padding: 22px 24px 24px; }
 }
 
