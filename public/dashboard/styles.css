@@ -695,19 +695,14 @@ img, svg { display: block; max-width: 100%; }
 
 .baby__row1 {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 12px;
 }
 
-@media (max-width: 1400px) {
-  .baby__row1 { grid-template-columns: repeat(5, 1fr); gap: 10px; }
-}
-@media (max-width: 1080px) {
-  .baby__row1 { grid-template-columns: repeat(5, 1fr); gap: 8px; }
-}
+@media (max-width: 1400px) { .baby__row1 { gap: 10px; } }
+@media (max-width: 1080px) { .baby__row1 { gap: 8px; } }
 @media (max-width: 720px) {
   .baby__row1 { grid-template-columns: repeat(2, 1fr); gap: 8px; }
-  .baby__row1 > :nth-child(5) { grid-column: span 2; }
 }
 
 .baby-card {
