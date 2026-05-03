@@ -354,10 +354,6 @@ function renderHome() {
           <div class="hero__bottom"><div><h3 class="hero__title">Casa</h3><div class="hero__meta" data-home-camera-meta>${cam.label} · ${condition} · ${temp}°C · modo ${houseCurrent}</div></div><div class="hero__actions"><button class="btn btn--ghost" data-route-go="baby">Babytracker</button></div></div>
         </div>
       </section>
-      <div class="house-modes" data-house-modes>
-        <span class="lbl">Modo da casa</span>
-        ${houseOptions.map((opt) => `<button class="chip-mode ${opt === houseCurrent ? "is-active" : ""}" data-house-mode="${opt}">${opt}</button>`).join("")}
-      </div>
       ${roomCard(ENTITY_MAP.groups.sala, "Sala")}
       ${roomCard(ENTITY_MAP.groups.cozinha, "Cozinha")}
       ${roomCard(ENTITY_MAP.groups.servicos, "Serviços")}
