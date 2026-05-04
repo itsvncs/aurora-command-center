@@ -1781,7 +1781,10 @@ camFs.innerHTML = `
   </button>
   <div class="camfs__bar"></div>
   <img class="camfs__img" alt="Câmera fullscreen" />
-  <div class="camfs__hint">Arraste para trocar · toque para fechar</div>
+  <button class="talk-back camfs__talk" id="camFsTalk" title="Falar nesta câmera" aria-label="Talk-back">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 11a7 7 0 0 1-14 0"/><path d="M12 18v3"/></svg>
+  </button>
+  <div class="camfs__hint">Arraste para trocar · toque para fechar · segure 🎤 para falar</div>
 `;
 document.body.appendChild(camFs);
 const camFsImg = camFs.querySelector(".camfs__img");
