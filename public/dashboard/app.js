@@ -1830,6 +1830,7 @@ function closeCameraFs() {
   clearInterval(camFsTimer);
   camFsTimer = null;
   camFsCurrent = null;
+  if (typeof _camFsStopTalk === "function") _camFsStopTalk();
 }
 camFs.querySelector(".camfs__close").addEventListener("click", (e) => { e.stopPropagation(); closeCameraFs(); });
 camFs.addEventListener("click", (e) => {
