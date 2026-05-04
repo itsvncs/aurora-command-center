@@ -1781,7 +1781,10 @@ camFs.innerHTML = `
   </button>
   <div class="camfs__bar"></div>
   <img class="camfs__img" alt="Câmera fullscreen" />
-  <div class="camfs__hint">Arraste para trocar · toque para fechar</div>
+  <button class="talk-back camfs__talk" id="camFsTalk" title="Falar nesta câmera" aria-label="Talk-back">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 11a7 7 0 0 1-14 0"/><path d="M12 18v3"/></svg>
+  </button>
+  <div class="camfs__hint">Arraste para trocar · toque para fechar · segure 🎤 para falar</div>
 `;
 document.body.appendChild(camFs);
 const camFsImg = camFs.querySelector(".camfs__img");
@@ -1827,10 +1830,11 @@ function closeCameraFs() {
   clearInterval(camFsTimer);
   camFsTimer = null;
   camFsCurrent = null;
+  if (typeof _camFsStopTalk === "function") _camFsStopTalk();
 }
 camFs.querySelector(".camfs__close").addEventListener("click", (e) => { e.stopPropagation(); closeCameraFs(); });
 camFs.addEventListener("click", (e) => {
-  if (e.target.closest("button, .camfs__bar")) return;
+  if (e.target.closest("button, .camfs__bar, .camfs__talk")) return;
   closeCameraFs();
 });
 attachSwipe(camFs, (dir) => {
@@ -1839,6 +1843,34 @@ attachSwipe(camFs, (dir) => {
   const next = ids[(i + (dir === "left" ? 1 : -1) + ids.length) % ids.length];
   switchCamFs(next, dir);
 });
+
+/* Talk-back universal — push-to-talk em qualquer câmera (fullscreen) */
+let _camFsTalkStream = null;
+async function _camFsStartTalk() {
+  if (_camFsTalkStream) return;
+  try {
+    _camFsTalkStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    document.getElementById("camFsTalk")?.classList.add("is-talking");
+    if (typeof toast === "function") toast(`🎤 Falando em ${camFsCurrent || "câmera"}…`, "info", 2000);
+    if (navigator.vibrate) navigator.vibrate(15);
+  } catch { if (typeof toast === "function") toast("Microfone não autorizado", "err"); }
+}
+function _camFsStopTalk() {
+  if (!_camFsTalkStream) return;
+  _camFsTalkStream.getTracks().forEach(t => t.stop());
+  _camFsTalkStream = null;
+  document.getElementById("camFsTalk")?.classList.remove("is-talking");
+}
+(function bindCamFsTalk(){
+  const btn = document.getElementById("camFsTalk");
+  if (!btn) return;
+  const start = (e)=>{ e.preventDefault(); e.stopPropagation(); _camFsStartTalk(); };
+  const stop  = (e)=>{ e.preventDefault(); e.stopPropagation(); _camFsStopTalk(); };
+  btn.addEventListener("pointerdown", start);
+  btn.addEventListener("pointerup", stop);
+  btn.addEventListener("pointercancel", stop);
+  btn.addEventListener("pointerleave", stop);
+})();
 
 /* =========================================================
    SCREENSAVER — bloquear na página baby
