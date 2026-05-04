@@ -907,40 +907,59 @@ img, svg { display: block; max-width: 100%; }
    TABLET SM-T505 / Fully Kiosk — fix de sumiço de botões
    landscape 1280x800  ·  portrait 800x1280
    ========================================================= */
+
+/* Topbar elástica em altura, em qualquer tablet */
 @media (max-width: 1366px) {
-  /* Topbar nunca pode esconder ações; reorganiza para caber */
-  .topbar { gap: 12px; padding: 14px 18px; }
+  .main { grid-template-rows: auto 1fr; }
+  .topbar {
+    min-height: var(--topbar-h);
+    height: auto;
+    gap: 12px;
+    padding: 12px 18px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, auto);
+  }
   .topbar__title { font-size: 22px; }
   .topbar__sub { font-size: 12px; }
   .topbar__right { gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  .topbar__right .icon-btn,
+  .topbar__right .weather-chip,
+  .topbar__right .conn-chip { flex: 0 0 auto; }
   .icon-btn { width: 38px; height: 38px; border-radius: 10px; }
   .icon-btn svg { width: 16px; height: 16px; }
   .weather-chip, .conn-chip { font-size: 12px; padding: 6px 10px; }
 }
 
-/* Tablet landscape (1024–1366) — encolhe a busca e prioriza ações */
+/* Tablet LANDSCAPE (1024–1366) — busca compacta, esconde labels secundários */
 @media (min-width: 1024px) and (max-width: 1366px) and (orientation: landscape) {
-  .topbar { grid-template-columns: minmax(260px, 1fr) minmax(180px, 280px) minmax(360px, auto); }
+  .topbar { grid-template-columns: minmax(0, 1fr) minmax(180px, 260px) minmax(0, auto); }
+  .topbar__sub { display: none; }
+  .topbar__title { font-size: 20px; }
   .search { padding: 8px 12px; }
   .search kbd { display: none; }
-  .topbar__sub { display: none; }
+  .search input { font-size: 13px; }
+  .conn-chip span:not(.d) { display: none; }   /* só o pontinho */
+  .weather-chip { padding: 6px 8px; }
+  .weather-chip strong + * { display: none; }  /* só temperatura, sem cidade */
 }
 
-/* Tablet portrait (≤1024) — esconde a busca e quebra topbar em 2 linhas se necessário */
-@media (max-width: 1024px) {
-  :root { --sidebar-w: 76px; --topbar-h: auto; }
-  .topbar { grid-template-columns: 1fr auto; row-gap: 8px; }
+/* Tablet PORTRAIT (≤1024) — esconde busca, topbar 2 linhas */
+@media (max-width: 1024px) and (orientation: portrait) {
+  :root { --sidebar-w: 76px; }
+  .topbar { grid-template-columns: 1fr auto; }
   .topbar__center { display: none; }
-  .topbar__right { flex-wrap: wrap; max-width: 100%; }
-  .topbar__sub { display: none; }
   .home-grid { grid-template-columns: 1fr 1fr; }
   .home-grid .hero { grid-column: span 2; }
 }
 
-/* Garantia: nenhum botão da topbar desaparece nunca */
-.topbar__right .icon-btn,
-.topbar__right .weather-chip,
-.topbar__right .conn-chip { flex: 0 0 auto; }
+/* Telas realmente pequenas (não-tablet) */
+@media (max-width: 900px) {
+  :root { --sidebar-w: 72px; --topbar-h: 76px; }
+  .topbar__center { display: none; }
+  .view { padding: 18px; }
+  .home-grid { grid-template-columns: 1fr 1fr; }
+  .home-grid .hero { grid-column: span 2; }
+  .scenes { grid-template-columns: repeat(2, 1fr); }
+}
 
 /* Talk-back universal no fullscreen */
 .camfs__talk {
