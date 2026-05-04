@@ -1833,7 +1833,7 @@ function closeCameraFs() {
 }
 camFs.querySelector(".camfs__close").addEventListener("click", (e) => { e.stopPropagation(); closeCameraFs(); });
 camFs.addEventListener("click", (e) => {
-  if (e.target.closest("button, .camfs__bar")) return;
+  if (e.target.closest("button, .camfs__bar, .camfs__talk")) return;
   closeCameraFs();
 });
 attachSwipe(camFs, (dir) => {
@@ -1842,6 +1842,34 @@ attachSwipe(camFs, (dir) => {
   const next = ids[(i + (dir === "left" ? 1 : -1) + ids.length) % ids.length];
   switchCamFs(next, dir);
 });
+
+/* Talk-back universal — push-to-talk em qualquer câmera (fullscreen) */
+let _camFsTalkStream = null;
+async function _camFsStartTalk() {
+  if (_camFsTalkStream) return;
+  try {
+    _camFsTalkStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    document.getElementById("camFsTalk")?.classList.add("is-talking");
+    if (typeof toast === "function") toast(`🎤 Falando em ${camFsCurrent || "câmera"}…`, "info", 2000);
+    if (navigator.vibrate) navigator.vibrate(15);
+  } catch { if (typeof toast === "function") toast("Microfone não autorizado", "err"); }
+}
+function _camFsStopTalk() {
+  if (!_camFsTalkStream) return;
+  _camFsTalkStream.getTracks().forEach(t => t.stop());
+  _camFsTalkStream = null;
+  document.getElementById("camFsTalk")?.classList.remove("is-talking");
+}
+(function bindCamFsTalk(){
+  const btn = document.getElementById("camFsTalk");
+  if (!btn) return;
+  const start = (e)=>{ e.preventDefault(); e.stopPropagation(); _camFsStartTalk(); };
+  const stop  = (e)=>{ e.preventDefault(); e.stopPropagation(); _camFsStopTalk(); };
+  btn.addEventListener("pointerdown", start);
+  btn.addEventListener("pointerup", stop);
+  btn.addEventListener("pointercancel", stop);
+  btn.addEventListener("pointerleave", stop);
+})();
 
 /* =========================================================
    SCREENSAVER — bloquear na página baby
