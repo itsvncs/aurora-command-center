@@ -370,9 +370,9 @@ function renderLights() {
     const roomTitle = room === "esther" ? "Quarto Esther" : room === "servicos" ? "Serviços" : room;
     const filtered = items.filter((item) => matchesQuery(item.name, item.subtitle, roomTitle, friendly(item.id, item.name)));
     if (!filtered.length) return [];
-    return [`<div class="card card--solid" style="grid-column:span 3;padding:12px 18px;"><h3 style="margin:0;font-family:var(--f-display);font-size:18px;text-transform:capitalize;">${roomTitle}</h3></div>`, ...filtered.map(lightCard)];
+    return [`<h3 class="lights-room-head">${roomTitle}</h3>`, `<div class="lights-room-grid">${filtered.map(lightCard).join("")}</div>`];
   });
-  return `${sectionHead("Luzes", state.query ? `Resultados para \"${state.query}\"` : "Controles individuais por cômodo")}<div class="home-grid" style="grid-template-columns:repeat(3,1fr);">${blocks.join("") || `<article class="card card--solid"><h3 style="margin:0 0 8px;">Nada encontrado</h3><div class="muted">Nenhum dispositivo corresponde à busca.</div></article>`}</div>`;
+  return `${sectionHead("Luzes", state.query ? `Resultados para \"${state.query}\"` : "Controles individuais por cômodo")}<div class="lights-page">${blocks.join("") || `<article class="card card--solid"><h3 style="margin:0 0 8px;">Nada encontrado</h3><div class="muted">Nenhum dispositivo corresponde à busca.</div></article>`}</div>`;
 }
 
 function renderClimate() {
