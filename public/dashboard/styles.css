@@ -1967,7 +1967,7 @@ body.is-editing .edit-banner { display: block; }
 :root {
   /* SF Pro stack (real no Apple, fallback Inter) */
   --f-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, "Segoe UI", sans-serif;
-  --f-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Sora", "Inter", system-ui, sans-serif;
+  --f-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter Tight", "Inter", system-ui, sans-serif;
   --f-mono: ui-monospace, "SF Mono", "Menlo", "Roboto Mono", monospace;
 
   /* Materials Apple-like (vibrancy aproximada) */
