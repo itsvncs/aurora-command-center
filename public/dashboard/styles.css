@@ -1697,3 +1697,143 @@ body.is-editing .edit-banner { display: block; }
 .fc-day .t { font-size: 16px; margin-top: 4px; }
 .fc-day .r { color: var(--c-cyan); font-size: 11px; }
 
+/* =========================================================
+   FIX DEFINITIVO — TABLET LANDSCAPE / FULLY KIOSK SM-T505
+   Mantém todos os comandos visíveis sem quebrar a topbar.
+   ========================================================= */
+@media (orientation: landscape) and (max-width: 1366px) and (max-height: 820px) {
+  :root { --sidebar-w: 72px; --topbar-h: 64px; }
+
+  html,
+  body,
+  .app { overflow: hidden; }
+
+  .app { grid-template-columns: var(--sidebar-w) minmax(0, 1fr); }
+  .main {
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    grid-template-rows: var(--topbar-h) minmax(0, 1fr);
+    overflow: hidden;
+  }
+
+  .sidebar { padding: 12px 8px; gap: 8px; overflow: hidden; }
+  .sidebar__brand { width: 48px; height: 48px; border-radius: 14px; }
+  .sidebar__nav { gap: 5px; margin-top: 6px; }
+  .sidebar__foot { gap: 8px; }
+  .nav-item { width: 48px; height: 48px; border-radius: 14px; }
+  .nav-item svg { width: 20px; height: 20px; }
+  .nav-item span { display: none; }
+  .avatar { width: 40px; height: 40px; }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+    height: var(--topbar-h);
+    min-height: 0;
+    padding: 8px 14px 8px 18px;
+    gap: 12px;
+    overflow: hidden;
+  }
+  .topbar__left { min-width: 0; flex: 1 1 auto; }
+  .topbar__title {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 20px;
+    line-height: 1.1;
+  }
+  .topbar__sub,
+  .topbar__center { display: none !important; }
+  .topbar__right {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+    gap: 7px;
+    min-width: 0;
+  }
+  .topbar__right .icon-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    flex: 0 0 44px;
+  }
+  .conn-chip {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    justify-content: center;
+    margin-right: 0;
+    flex: 0 0 28px;
+  }
+  .conn-chip span:not(.d),
+  #connTxt { display: none !important; }
+  .weather-chip {
+    height: 34px;
+    padding: 0 9px;
+    gap: 6px;
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+  .weather-chip > span:last-child { font-size: 0; }
+  .weather-chip #wxTemp { font-size: 12px; }
+  .weather-chip #wxLocation { display: none; }
+
+  .view {
+    min-height: 0;
+    padding: 16px 16px 24px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .section-head { margin: 2px 2px 10px; }
+  .card { padding: 16px; border-radius: 18px; }
+  .card-head { margin-bottom: 10px; }
+  .card-icon { width: 32px; height: 32px; border-radius: 10px; }
+
+  .home-grid,
+  .climate-grid,
+  .media-grid {
+    grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr) minmax(0, 1fr) !important;
+    grid-auto-rows: minmax(118px, auto);
+    gap: 12px;
+  }
+  .sec-grid { grid-template-columns: minmax(0, 1.7fr) minmax(260px, .9fr) !important; gap: 12px; }
+  .home-grid .hero { min-height: 258px; border-radius: 22px; }
+  .hero__overlay { padding: 16px 18px; }
+  .hero__top { align-items: flex-start; }
+  .hero__tabs {
+    max-width: calc(100% - 76px);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .hero__tabs::-webkit-scrollbar { display: none; }
+  .hero__tabs button { padding: 6px 10px; white-space: nowrap; }
+  .hero__title { font-size: 24px; }
+  .hero__meta { font-size: 12px; }
+  .stat-card .value { font-size: 28px; }
+  .big-num { font-size: 36px; }
+  .scenes { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+
+  .gauge { --size: 168px; }
+  .gauge-card { padding: 18px; }
+  .media-grid .player,
+  .climate-grid .card { min-width: 0; }
+
+  .baby {
+    height: auto;
+    min-height: calc(100dvh - var(--topbar-h) - 32px);
+    grid-template-rows: auto minmax(320px, 1fr);
+  }
+  .baby__row1 { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+  .baby__cam { min-height: 320px; border-radius: 22px; }
+  .baby__cam .ovl { padding: 16px 18px; }
+  .baby__cam .acts { flex-wrap: wrap; justify-content: flex-end; }
+
+  .fab { right: 16px; bottom: 16px; width: 54px; height: 54px; }
+}
+
