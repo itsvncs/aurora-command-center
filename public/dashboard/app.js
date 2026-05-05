@@ -767,9 +767,9 @@ window.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && state.route === "baby") go("home");
 });
 
-/* Ripple universal — ativa em qualquer botão com .ripple */
+/* Ripple universal — ativa em qualquer .ripple ou em toggle-row do Babytracker */
 document.addEventListener("pointerdown", (e) => {
-  const target = e.target.closest(".ripple");
+  const target = e.target.closest(".ripple, .baby--cinema .baby-ctrls .toggle-row");
   if (!target) return;
   const rect = target.getBoundingClientRect();
   target.style.setProperty("--rx", `${e.clientX - rect.left}px`);
