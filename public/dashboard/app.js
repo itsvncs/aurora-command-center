@@ -1,4 +1,4 @@
-﻿const ROUTES = ["home", "lights", "climate", "security", "media", "baby"];
+const ROUTES = ["home", "lights", "climate", "security", "media", "baby"];
 
 const ENTITY_MAP = {
   weather: "weather.casa",
