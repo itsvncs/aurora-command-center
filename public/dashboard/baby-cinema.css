@@ -482,3 +482,27 @@ body[data-baby-cinema] .fab { display: none !important; }
     animation: none !important;
   }
 }
+
+/* Toggles do Babytracker ganham ripple sem mudar HTML compartilhado */
+.baby--cinema .baby-ctrls .toggle-row {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  -webkit-tap-highlight-color: transparent;
+}
+.baby--cinema .baby-ctrls .toggle-row::after {
+  content: "";
+  position: absolute;
+  left: var(--rx, 50%);
+  top: var(--ry, 50%);
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(1);
+  pointer-events: none;
+  z-index: 0;
+}
+.baby--cinema .baby-ctrls .toggle-row.is-rippling::after {
+  animation: rippleOut .55s cubic-bezier(.22,.9,.34,1) forwards;
+}
