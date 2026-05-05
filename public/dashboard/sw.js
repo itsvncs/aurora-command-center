@@ -1,5 +1,5 @@
 // Service Worker — cache da shell do dashboard
-const CACHE = "aurora-shell-v3";
+const CACHE = "aurora-shell-v4";
 const ASSETS = [
   "/dashboard/",
   "/dashboard/index.html",
