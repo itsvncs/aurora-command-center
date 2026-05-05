@@ -1212,7 +1212,7 @@ body[data-theme="night"] img { opacity: .55; }
 .room-card, .light-card, .player, .baby-media { cursor: pointer; }
 
 /* =========================================================
-   NOVO BOTÃO DE LUZ (substitui o switch nos cards de luz)
+   NOVO BOTÍO DE LUZ (substitui o switch nos cards de luz)
    ========================================================= */
 .lightbtn {
   position: relative;
