@@ -1,0 +1,258 @@
+/* =========================================================
+   BABYTRACKER — CINEMA MODE (câmera fullscreen + overlays)
+   ========================================================= */
+
+.baby--cinema {
+  position: relative;
+  width: 100%;
+  /* Ocupa toda a área da view abatendo o padding do .view */
+  height: calc(100vh - var(--topbar-h, 76px) - 32px);
+  min-height: 480px;
+  display: block;
+}
+
+/* Margens negativas pra "estourar" o padding da .view e ficar fullscreen */
+.view:has(.baby--cinema) { padding: 0 !important; }
+.baby--cinema { height: calc(100vh - var(--topbar-h, 76px)); }
+
+.baby__stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  overflow: hidden;
+  background: #04060a;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+
+.baby__feed {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(80% 80% at 50% 45%, #1a2230 0%, #07090d 70%, #04060a 100%);
+}
+.baby__feed .feed-img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.baby__feed::after {
+  content: ""; position: absolute; inset: 0;
+  background: repeating-linear-gradient(0deg, rgba(255,255,255,.02) 0 1px, transparent 1px 4px);
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+
+/* Vinheta para legibilidade dos overlays */
+.baby__scrim {
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(180deg, rgba(0,0,0,.55) 0%, rgba(0,0,0,0) 18%, rgba(0,0,0,0) 62%, rgba(0,0,0,.65) 100%),
+    linear-gradient(90deg, rgba(0,0,0,.45) 0%, rgba(0,0,0,0) 22%, rgba(0,0,0,0) 78%, rgba(0,0,0,.45) 100%);
+  pointer-events: none;
+}
+
+/* ===== HUD topo ===== */
+.baby__hud {
+  position: absolute;
+  left: 24px; right: 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px;
+  pointer-events: none;
+  z-index: 4;
+}
+.baby__hud > * { pointer-events: auto; }
+.baby__hud--top { top: 22px; }
+
+.baby__id .nm {
+  font-family: var(--f-display); font-size: 22px; font-weight: 700;
+  letter-spacing: -0.022em; color: #fff;
+  text-shadow: 0 2px 14px rgba(0,0,0,.5);
+}
+.baby__id .meta {
+  color: rgba(255,255,255,.78); font-size: 12.5px; margin-top: 2px;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 8px rgba(0,0,0,.5);
+}
+
+.baby__chips { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.chip-live, .chip-soft {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 999px;
+  font-size: 12px; font-weight: 500; color: #fff;
+  background: rgba(15,18,24,.55);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 0.5px solid rgba(255,255,255,.14);
+}
+.chip-live { background: rgba(255,90,90,.22); border-color: rgba(255,120,120,.4); color: #ffd1d1; }
+.chip-live .pulse {
+  width: 7px; height: 7px; border-radius: 50%; background: #ff6b6b;
+  box-shadow: 0 0 0 0 rgba(255,107,107,.8);
+  animation: pulse 1.4s ease-out infinite;
+}
+.chip-btn { cursor: pointer; transition: background .18s ease; }
+.chip-btn:hover { background: rgba(30,36,46,.7); }
+
+/* ===== Painéis flutuantes laterais ===== */
+.baby__panel {
+  position: absolute;
+  z-index: 3;
+  display: flex; flex-direction: column; gap: 12px;
+  width: clamp(220px, 22vw, 280px);
+  pointer-events: none;
+}
+.baby__panel > * { pointer-events: auto; }
+.baby__panel--left  { left: 24px;  top: 84px; bottom: 132px; }
+.baby__panel--right { right: 24px; top: 84px; bottom: 132px; }
+
+/* Glass card vibrante p/ sobrepor à câmera */
+.glass-card {
+  background: rgba(14, 17, 22, 0.55);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 0.5px solid rgba(255,255,255,.10);
+  border-radius: 22px;
+  padding: 14px 16px;
+  box-shadow:
+    0 20px 50px -20px rgba(0,0,0,.6),
+    inset 0 1px 0 rgba(255,255,255,.06);
+  color: #fff;
+}
+.glass-card .ttl { color: #fff; }
+.glass-card .sub, .glass-card .meta { color: rgba(255,255,255,.7); }
+
+/* Sobrepõe regras antigas que assumiam .baby-card dentro de .baby__row1 */
+.baby--cinema .baby-card {
+  display: flex; flex-direction: column; gap: 10px;
+  min-height: auto; height: auto;
+}
+.baby--cinema .baby-card .head { display: flex; justify-content: space-between; align-items: center; }
+.baby--cinema .baby-card .ttl { font-family: var(--f-display); font-size: 13px; font-weight: 600; letter-spacing: 0; }
+
+.baby--cinema .baby-temp .ring {
+  background: conic-gradient(from 220deg, rgba(255,138,155,.85), rgba(255,138,155,.15) 70%, rgba(255,255,255,.06));
+  border-radius: 50%;
+  display: grid; place-items: center;
+  position: relative;
+}
+.baby--cinema .baby-temp .ring::before {
+  content: ""; position: absolute; inset: 6px; border-radius: 50%;
+  background: rgba(10,12,16,.85); backdrop-filter: blur(12px);
+}
+.baby--cinema .baby-temp .ring b {
+  position: relative; font-family: var(--f-display); font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.baby--cinema .baby-noise .wave svg { width: 100%; height: 32px; opacity: .7; color: #7dd3fc; }
+.baby--cinema .baby-noise.is-on { border-color: rgba(125,211,252,.45); background: rgba(20,40,60,.55); }
+.baby--cinema .baby-noise .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.baby--cinema .baby-noise .btns button {
+  padding: 8px 0; border-radius: 999px; font-size: 12px; font-weight: 600;
+  background: rgba(255,255,255,.06); color: rgba(255,255,255,.75);
+  border: 0.5px solid rgba(255,255,255,.10);
+  transition: all .18s cubic-bezier(.32,.72,0,1);
+}
+.baby--cinema .baby-noise .btns button.is-active { background: #7dd3fc; color: #0a0c0f; border-color: transparent; }
+.baby--cinema .baby-noise .btns button:active { transform: scale(.96); }
+
+.baby--cinema .baby-ctrls .toggle-row {
+  background: rgba(255,255,255,.05);
+  border: 0.5px solid rgba(255,255,255,.08);
+  color: #fff;
+}
+.baby--cinema .baby-ctrls .toggle-row.is-on {
+  background: rgba(214,255,77,.14);
+  border-color: rgba(214,255,77,.35);
+}
+.baby--cinema .baby-ctrls .toggle-row .sb { color: rgba(255,255,255,.6); }
+
+/* ===== Dock inferior (mídia) ===== */
+.baby__dock {
+  position: absolute;
+  left: 50%; bottom: 22px;
+  transform: translateX(-50%);
+  width: min(720px, calc(100% - 48px));
+  z-index: 4;
+}
+.baby__dock .baby-media {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 18px;
+  padding: 14px 18px;
+}
+.baby__dock .dock-info { min-width: 0; }
+.baby__dock .nowplay { font-size: 14px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.baby__dock .artist  { font-size: 12px; color: rgba(255,255,255,.65); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.baby__dock .ctrls { display: flex; align-items: center; gap: 10px; }
+.baby__dock .ctrls .pp {
+  width: 42px; height: 42px; border-radius: 50%;
+  background: #fff; color: #0a0c0f;
+  display: grid; place-items: center; font-size: 14px;
+  border: none; cursor: pointer;
+  transition: transform .18s cubic-bezier(.32,.72,0,1);
+}
+.baby__dock .ctrls .pp:active { transform: scale(.94); }
+.baby__dock .vol { display:flex; gap: 2px; align-items: end; height: 16px; }
+.baby__dock .vol i { width: 3px; background: var(--c-lime, #d6ff4d); border-radius: 2px; animation: eq 1s ease-in-out infinite; }
+.baby__dock .vol i:nth-child(1){ height:30%; animation-delay:-.1s }
+.baby__dock .vol i:nth-child(2){ height:70%; animation-delay:-.4s }
+.baby__dock .vol i:nth-child(3){ height:50%; animation-delay:-.7s }
+.baby__dock .vol i:nth-child(4){ height:90% }
+.baby__dock .baby-media.is-paused .vol i { animation-play-state: paused; opacity: .35; }
+.baby__dock .dock-actions { display: flex; gap: 8px; }
+
+/* ===== Responsivo ===== */
+/* Tablet retrato — empilha painéis embaixo, libera câmera no topo */
+@media (orientation: portrait), (max-width: 900px) {
+  .baby--cinema { height: calc(100vh - var(--topbar-h, 76px)); }
+  .baby__panel--left,
+  .baby__panel--right {
+    position: static;
+    width: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    bottom: auto; top: auto;
+  }
+  .baby__panel--left > *,
+  .baby__panel--right > * { flex: 1 1 160px; min-width: 160px; }
+
+  .baby__stage {
+    display: grid;
+    grid-template-rows: minmax(40vh, 1fr) auto auto;
+  }
+  .baby__feed, .baby__scrim, .baby__hud { grid-row: 1; }
+  .baby__panel--left  { grid-row: 2; padding: 12px 14px; gap: 10px; display: flex; }
+  .baby__panel--right { grid-row: 3; padding: 0 14px 12px; display: flex; }
+  .baby__dock {
+    position: static;
+    transform: none;
+    width: auto;
+    margin: 0 14px 14px;
+    grid-row: 4;
+  }
+  .baby__stage { grid-template-rows: minmax(38vh, 1fr) auto auto auto; }
+}
+
+/* Telas estreitas extras */
+@media (max-width: 600px) {
+  .baby__hud--top { left: 14px; right: 14px; top: 14px; }
+  .baby__id .nm { font-size: 18px; }
+  .baby__dock .baby-media { grid-template-columns: 1fr auto; }
+  .baby__dock .dock-actions { display: none; }
+}
+
+/* Animações */
+@keyframes pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(255,107,107,.7); }
+  70%  { box-shadow: 0 0 0 12px rgba(255,107,107,0); }
+  100% { box-shadow: 0 0 0 0 rgba(255,107,107,0); }
+}
+@keyframes eq {
+  0%, 100% { transform: scaleY(.6); }
+  50%      { transform: scaleY(1); }
+}
