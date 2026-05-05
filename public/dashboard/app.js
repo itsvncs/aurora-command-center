@@ -426,7 +426,7 @@ function renderBaby() {
   const mediaEnt = entity(mediaId);
   const mediaTitle = mediaEnt?.attributes?.media_title || friendly(mediaId, "Echo Quarto");
   const mediaArtist = mediaEnt?.attributes?.media_artist || formatState(mediaId);
-  return `<div class="baby baby--cinema"><section class="baby__stage card" data-camera-fullscreen="${ENTITY_MAP.baby.camera}"><div class="baby__feed"><img class="feed-img" data-camera-feed="${ENTITY_MAP.baby.camera}" alt="Sinal da câmera" /></div><div class="baby__scrim"></div><div class="baby__hud baby__hud--top"><div class="baby__id"><div class="nm">Esther · Berço</div><div class="meta">Quarto · ${occ ? "ocupado" : "livre"} · ${num(ENTITY_MAP.baby.temp, 0).toFixed(1)}°C</div></div><div class="baby__chips"><span class="chip-live"><span class="pulse"></span>Live</span><span class="chip-soft">Sinal ativo</span><button class="chip-soft chip-btn" data-refresh-camera="${ENTITY_MAP.baby.camera}">Atualizar</button></div></div><aside class="baby__panel baby__panel--left"><article class="glass-card baby-card baby-temp"><div class="head"><div class="ttl">Temperatura</div><div class="card-icon">${iconSvg("temp")}</div></div><div class="row" style="justify-content:center;align-items:center;"><div class="ring" style="width:108px;height:108px;"><b style="font-size:24px;">${num(ENTITY_MAP.baby.temp, 0).toFixed(1)}°</b></div></div></article><article class="glass-card baby-card baby-noise ${noiseOn ? "is-on" : ""}" data-entity="${ENTITY_MAP.baby.noise}"><div class="head"><div class="ttl">Ruído branco</div><div class="card-icon">${iconSvg("noise")}</div></div><div class="wave"><svg viewBox="0 0 200 40" fill="none"><path d="M0 20c20 0 20-12 40-12s20 24 40 24 20-24 40-24 20 24 40 24 20-12 40-12" stroke="currentColor" stroke-width="3" stroke-linecap="round" opacity=".8"/></svg></div><div class="btns"><button class="${noiseOn ? "is-active" : ""}" data-script="${ENTITY_MAP.scripts.noiseOn}">Ligar</button><button class="${!noiseOn ? "is-active" : ""}" data-script="${ENTITY_MAP.scripts.noiseOff}">Parar</button></div></article></aside><aside class="baby__panel baby__panel--right"><article class="glass-card baby-card baby-ctrls"><div class="head"><div class="ttl">Controles</div><div class="card-icon">${iconSvg("light")}</div></div>${toggleRow(ENTITY_MAP.baby.teto, "Teto", "Luz principal")}${toggleRow(ENTITY_MAP.baby.led, "Led Esther", "Apoio")}${toggleRow(ENTITY_MAP.baby.heater, "Aquecedor", "Conforto")}</article></aside><div class="baby__dock"><article class="glass-card baby-card baby-media ${entityState(mediaId) === "paused" ? "is-paused" : ""}" data-entity="${mediaId}"><div class="dock-info"><div class="nowplay">${mediaTitle}</div><div class="artist">${mediaArtist}</div></div><div class="ctrls"><button class="btn" data-media-prev="${mediaId}">◀</button><button class="pp" data-media-playpause="${mediaId}">${entityState(mediaId) === "playing" ? "❚❚" : "▶"}</button><div class="vol"><i></i><i></i><i></i><i></i></div></div><div class="dock-actions"><button class="btn btn--ghost" data-route-go="security">Segurança</button></div></article></div></section></div>`;
+  return `<div class="baby baby--cinema"><section class="baby__stage card" data-camera-fullscreen="${ENTITY_MAP.baby.camera}"><div class="baby__feed"><img class="feed-img" data-camera-feed="${ENTITY_MAP.baby.camera}" alt="Sinal da câmera" /></div><div class="baby__scrim"></div><div class="baby__hud baby__hud--top"><div class="baby__id"><div class="nm">Esther · Berço</div><div class="meta">Quarto · ${occ ? "ocupado" : "livre"} · ${num(ENTITY_MAP.baby.temp, 0).toFixed(1)}°C</div></div><div class="baby__chips"><span class="chip-live"><span class="pulse"></span>Live</span><span class="chip-soft">Sinal ativo</span><button class="chip-soft chip-btn ripple" data-refresh-camera="${ENTITY_MAP.baby.camera}"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/></svg>Atualizar</button><button class="chip-soft chip-btn chip-exit ripple" data-route-go="home" title="Sair do modo cinema"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></div></div><aside class="baby__panel baby__panel--left"><article class="glass-card baby-card baby-temp"><div class="head"><div class="ttl">Temperatura</div><div class="card-icon">${iconSvg("temp")}</div></div><div class="row" style="justify-content:center;align-items:center;"><div class="ring" style="width:108px;height:108px;"><b style="font-size:24px;">${num(ENTITY_MAP.baby.temp, 0).toFixed(1)}°</b></div></div></article><article class="glass-card baby-card baby-noise ${noiseOn ? "is-on" : ""}" data-entity="${ENTITY_MAP.baby.noise}"><div class="head"><div class="ttl">Ruído branco</div><div class="card-icon">${iconSvg("noise")}</div></div><div class="wave"><svg viewBox="0 0 200 40" fill="none"><path d="M0 20c20 0 20-12 40-12s20 24 40 24 20-24 40-24 20 24 40 24 20-12 40-12" stroke="currentColor" stroke-width="3" stroke-linecap="round" opacity=".8"/></svg></div><div class="btns"><button class="ripple ${noiseOn ? "is-active" : ""}" data-script="${ENTITY_MAP.scripts.noiseOn}">Ligar</button><button class="ripple ${!noiseOn ? "is-active" : ""}" data-script="${ENTITY_MAP.scripts.noiseOff}">Parar</button></div></article></aside><aside class="baby__panel baby__panel--right"><article class="glass-card baby-card baby-ctrls"><div class="head"><div class="ttl">Controles</div><div class="card-icon">${iconSvg("light")}</div></div>${toggleRow(ENTITY_MAP.baby.teto, "Teto", "Luz principal")}${toggleRow(ENTITY_MAP.baby.led, "Led Esther", "Apoio")}${toggleRow(ENTITY_MAP.baby.heater, "Aquecedor", "Conforto")}</article></aside><div class="baby__dock"><article class="glass-card baby-card baby-media ${entityState(mediaId) === "paused" ? "is-paused" : ""}" data-entity="${mediaId}"><div class="dock-info"><div class="nowplay">${mediaTitle}</div><div class="artist">${mediaArtist}</div></div><div class="ctrls"><button class="btn ripple" data-media-prev="${mediaId}">◀</button><button class="pp ripple" data-media-playpause="${mediaId}">${entityState(mediaId) === "playing" ? "❚❚" : "▶"}</button><div class="vol"><i></i><i></i><i></i><i></i></div></div><div class="dock-actions"><button class="btn btn--ghost ripple" data-route-go="security">Segurança</button></div></article></div></section></div>`;
 }
 
 function renderError() {
@@ -640,6 +640,8 @@ function bindInteractions() {
 function go(route) {
   state.route = ROUTES.includes(route) ? route : "home";
   history.replaceState(null, "", `#${state.route}`);
+  // Cinema mode: full-bleed Babytracker (hides topbar + sidebar via CSS).
+  document.body.toggleAttribute("data-baby-cinema", state.route === "baby");
   render();
 }
 
@@ -759,6 +761,25 @@ searchInput?.addEventListener("keydown", (e) => {
 
 window.addEventListener("hashchange", () => go((location.hash || "#home").slice(1)));
 window.addEventListener("beforeunload", stopCameraFeeds);
+
+/* ESC sai do modo cinema do Babytracker */
+window.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && state.route === "baby") go("home");
+});
+
+/* Ripple universal — ativa em qualquer .ripple ou em toggle-row do Babytracker */
+document.addEventListener("pointerdown", (e) => {
+  const target = e.target.closest(".ripple, .baby--cinema .baby-ctrls .toggle-row");
+  if (!target) return;
+  const rect = target.getBoundingClientRect();
+  target.style.setProperty("--rx", `${e.clientX - rect.left}px`);
+  target.style.setProperty("--ry", `${e.clientY - rect.top}px`);
+  target.classList.remove("is-rippling");
+  // force reflow so animation restarts
+  void target.offsetWidth;
+  target.classList.add("is-rippling");
+  setTimeout(() => target.classList.remove("is-rippling"), 600);
+});
 document.addEventListener("pointerup", () => {
   const active = document.activeElement;
   if (!active) return;
@@ -769,6 +790,7 @@ document.addEventListener("pointerup", () => {
 (async () => {
   const route = (location.hash || "#home").slice(1);
   state.route = ROUTES.includes(route) ? route : "home";
+  document.body.toggleAttribute("data-baby-cinema", state.route === "baby");
   await bootstrap();
 })();
 

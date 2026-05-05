@@ -256,3 +256,253 @@
   0%, 100% { transform: scaleY(.6); }
   50%      { transform: scaleY(1); }
 }
+
+/* =========================================================
+   CINEMA MODE — Babytracker fullscreen dentro do app
+   Ativa quando body[data-baby-cinema] (set por app.js no go("baby")).
+   Esconde sidebar + topbar com transição suave; ESC ou botão "Sair" volta.
+   ========================================================= */
+body[data-baby-cinema] .sidebar,
+body[data-baby-cinema] .topbar {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .28s cubic-bezier(.32,.72,0,1), transform .32s cubic-bezier(.32,.72,0,1);
+}
+body[data-baby-cinema] .sidebar { transform: translateX(-100%); }
+body[data-baby-cinema] .topbar  { transform: translateY(-100%); }
+
+body[data-baby-cinema] .app {
+  grid-template-columns: 0 1fr !important;
+  grid-template-rows: 0 1fr !important;
+  transition: grid-template-columns .32s cubic-bezier(.32,.72,0,1),
+              grid-template-rows    .32s cubic-bezier(.32,.72,0,1);
+}
+body[data-baby-cinema] .main { grid-column: 1 / -1; }
+body[data-baby-cinema] .view {
+  padding: 0 !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+}
+body[data-baby-cinema] .baby--cinema {
+  height: 100vh !important;
+  height: 100dvh !important;
+  animation: cinemaIn .42s cubic-bezier(.32,.72,0,1) both;
+}
+body[data-baby-cinema] .fab { display: none !important; }
+
+/* Restauração suave (quando o atributo é removido) */
+.sidebar, .topbar {
+  transition: opacity .24s cubic-bezier(.32,.72,0,1), transform .28s cubic-bezier(.32,.72,0,1);
+}
+
+@keyframes cinemaIn {
+  0%   { opacity: 0; transform: scale(1.02); filter: blur(6px); }
+  60%  { filter: blur(0); }
+  100% { opacity: 1; transform: scale(1); filter: blur(0); }
+}
+
+/* Botão "Sair do cinema" */
+.chip-exit {
+  width: 32px;
+  padding: 0 !important;
+  display: inline-grid !important;
+  place-items: center;
+  background: rgba(20,24,32,.55);
+}
+.chip-exit:hover { background: rgba(255,90,90,.28); border-color: rgba(255,140,140,.5); color: #ffd1d1; }
+.chip-exit:active { transform: scale(.92); }
+
+/* =========================================================
+   FLUID BUTTONS — ripple + spring press para o Babytracker
+   ========================================================= */
+
+/* Ripple universal (qualquer botão com .ripple) */
+.ripple {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  -webkit-tap-highlight-color: transparent;
+}
+.ripple::after {
+  content: "";
+  position: absolute;
+  left: var(--rx, 50%);
+  top: var(--ry, 50%);
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(1);
+  pointer-events: none;
+  z-index: 0;
+}
+.ripple.is-rippling::after {
+  animation: rippleOut .55s cubic-bezier(.22,.9,.34,1) forwards;
+}
+@keyframes rippleOut {
+  0%   { opacity: .35; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0;   transform: translate(-50%, -50%) scale(45); }
+}
+
+/* Toggles dos 3 controles — press fluido + glow ao ligar */
+.baby--cinema .baby-ctrls .toggle-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; padding: 12px 14px; border-radius: 16px;
+  cursor: pointer;
+  transition:
+    background .32s cubic-bezier(.32,.72,0,1),
+    border-color .32s cubic-bezier(.32,.72,0,1),
+    transform .18s cubic-bezier(.34,1.56,.64,1),
+    box-shadow .32s cubic-bezier(.32,.72,0,1);
+  will-change: transform;
+}
+.baby--cinema .baby-ctrls .toggle-row:hover {
+  background: rgba(255,255,255,.09);
+  transform: translateY(-1px);
+}
+.baby--cinema .baby-ctrls .toggle-row:active { transform: scale(.97); }
+.baby--cinema .baby-ctrls .toggle-row.is-on {
+  box-shadow: 0 8px 24px -10px rgba(214,255,77,.35), inset 0 1px 0 rgba(255,255,255,.08);
+}
+.baby--cinema .baby-ctrls .toggle-row .lightbtn {
+  transition: transform .26s cubic-bezier(.34,1.56,.64,1), color .24s ease;
+}
+.baby--cinema .baby-ctrls .toggle-row.is-on .lightbtn {
+  transform: rotate(-8deg) scale(1.08);
+  color: #d6ff4d;
+  filter: drop-shadow(0 2px 8px rgba(214,255,77,.5));
+}
+.baby--cinema .baby-ctrls .toggle-row .nm {
+  font-weight: 600; font-size: 14px; letter-spacing: -.01em;
+  transition: color .24s ease;
+}
+.baby--cinema .baby-ctrls .toggle-row.is-on .nm { color: #f4ffc8; }
+
+/* Ruído branco — botões Ligar/Parar mais fluidos */
+.baby--cinema .baby-noise .btns button {
+  position: relative;
+  padding: 10px 0;
+  cursor: pointer;
+  transition:
+    background .28s cubic-bezier(.32,.72,0,1),
+    color .24s ease,
+    transform .2s cubic-bezier(.34,1.56,.64,1),
+    box-shadow .28s cubic-bezier(.32,.72,0,1),
+    border-color .28s ease;
+}
+.baby--cinema .baby-noise .btns button:hover:not(.is-active) {
+  background: rgba(255,255,255,.10);
+  transform: translateY(-1px);
+}
+.baby--cinema .baby-noise .btns button:active { transform: scale(.94); }
+.baby--cinema .baby-noise .btns button.is-active {
+  box-shadow: 0 6px 20px -8px rgba(125,211,252,.55), inset 0 1px 0 rgba(255,255,255,.18);
+  transform: scale(1);
+}
+.baby--cinema .baby-noise .wave svg path {
+  transition: opacity .4s ease;
+}
+.baby--cinema .baby-noise.is-on .wave svg path {
+  animation: waveBreath 2.2s ease-in-out infinite;
+}
+@keyframes waveBreath {
+  0%, 100% { opacity: .55; transform: translateY(0); }
+  50%      { opacity: .95; transform: translateY(-1px); }
+}
+
+/* Player do dock — play/pause com bounce + prev com slide */
+.baby__dock .ctrls .btn,
+.baby__dock .ctrls .pp,
+.baby__dock .dock-actions .btn {
+  cursor: pointer;
+  transition:
+    transform .22s cubic-bezier(.34,1.56,.64,1),
+    background .26s cubic-bezier(.32,.72,0,1),
+    box-shadow .28s ease,
+    color .22s ease;
+}
+.baby__dock .ctrls .btn:hover { background: rgba(255,255,255,.14); transform: translateX(-2px); }
+.baby__dock .ctrls .btn:active { transform: translateX(-2px) scale(.92); }
+
+.baby__dock .ctrls .pp {
+  box-shadow: 0 8px 22px -8px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.6);
+}
+.baby__dock .ctrls .pp:hover {
+  transform: scale(1.06);
+  box-shadow: 0 12px 28px -8px rgba(255,255,255,.25), inset 0 1px 0 rgba(255,255,255,.8);
+}
+.baby__dock .ctrls .pp:active { transform: scale(.92); }
+
+.baby__dock .dock-actions .btn:hover {
+  background: rgba(255,255,255,.10);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px -8px rgba(0,0,0,.4);
+}
+.baby__dock .dock-actions .btn:active { transform: scale(.95); }
+
+/* Equalizer mais vivo quando playing */
+.baby__dock .baby-media:not(.is-paused) .vol i {
+  filter: drop-shadow(0 0 4px rgba(214,255,77,.45));
+}
+
+/* Chips do topo — hover/tap refinados */
+.chip-soft, .chip-btn {
+  transition:
+    background .26s cubic-bezier(.32,.72,0,1),
+    border-color .26s ease,
+    transform .2s cubic-bezier(.34,1.56,.64,1),
+    color .22s ease;
+}
+.chip-btn:hover { background: rgba(40,46,58,.78); transform: translateY(-1px); }
+.chip-btn:active { transform: scale(.94); }
+.chip-btn svg { transition: transform .4s cubic-bezier(.34,1.56,.64,1); }
+.chip-btn:hover svg { transform: rotate(180deg); }
+
+/* Pulse do "Live" mais respirado */
+.chip-live .pulse {
+  animation: pulse 1.6s ease-out infinite, livePulse 2.2s ease-in-out infinite;
+}
+@keyframes livePulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.25); }
+}
+
+/* Reduce motion — respeita preferência do SO */
+@media (prefers-reduced-motion: reduce) {
+  body[data-baby-cinema] .sidebar,
+  body[data-baby-cinema] .topbar,
+  body[data-baby-cinema] .app,
+  body[data-baby-cinema] .baby--cinema,
+  .ripple::after,
+  .baby--cinema .baby-ctrls .toggle-row,
+  .baby--cinema .baby-noise .btns button,
+  .baby__dock .ctrls .pp,
+  .chip-btn {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* Toggles do Babytracker ganham ripple sem mudar HTML compartilhado */
+.baby--cinema .baby-ctrls .toggle-row {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  -webkit-tap-highlight-color: transparent;
+}
+.baby--cinema .baby-ctrls .toggle-row::after {
+  content: "";
+  position: absolute;
+  left: var(--rx, 50%);
+  top: var(--ry, 50%);
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(1);
+  pointer-events: none;
+  z-index: 0;
+}
+.baby--cinema .baby-ctrls .toggle-row.is-rippling::after {
+  animation: rippleOut .55s cubic-bezier(.22,.9,.34,1) forwards;
+}
