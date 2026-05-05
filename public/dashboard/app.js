@@ -640,6 +640,8 @@ function bindInteractions() {
 function go(route) {
   state.route = ROUTES.includes(route) ? route : "home";
   history.replaceState(null, "", `#${state.route}`);
+  // Cinema mode: full-bleed Babytracker (hides topbar + sidebar via CSS).
+  document.body.toggleAttribute("data-baby-cinema", state.route === "baby");
   render();
 }
 
