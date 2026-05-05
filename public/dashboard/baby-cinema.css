@@ -399,15 +399,31 @@ body[data-baby-cinema] .fab { display: none !important; }
   box-shadow: 0 6px 20px -8px rgba(125,211,252,.55), inset 0 1px 0 rgba(255,255,255,.18);
   transform: scale(1);
 }
+.baby--cinema .baby-noise .wave { overflow: hidden; }
+.baby--cinema .baby-noise .wave svg {
+  display: block;
+  transform-origin: center;
+  will-change: transform, opacity;
+}
 .baby--cinema .baby-noise .wave svg path {
-  transition: opacity .4s ease;
+  stroke-dasharray: 60 18;
+  stroke-dashoffset: 0;
+  transition: opacity .4s ease, stroke .4s ease;
+  animation: waveFlow 3.6s linear infinite, waveBreath 2.6s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
 }
 .baby--cinema .baby-noise.is-on .wave svg path {
-  animation: waveBreath 2.2s ease-in-out infinite;
+  animation: waveFlow 1.8s linear infinite, waveBreath 1.6s ease-in-out infinite;
+  filter: drop-shadow(0 0 6px rgba(125,211,252,.55));
+}
+@keyframes waveFlow {
+  0%   { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: -156; }
 }
 @keyframes waveBreath {
-  0%, 100% { opacity: .55; transform: translateY(0); }
-  50%      { opacity: .95; transform: translateY(-1px); }
+  0%, 100% { opacity: .55; transform: scaleY(.85); }
+  50%      { opacity: 1;   transform: scaleY(1.15); }
 }
 
 /* Player do dock — play/pause com bounce + prev com slide */
