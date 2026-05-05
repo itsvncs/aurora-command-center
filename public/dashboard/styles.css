@@ -2343,3 +2343,99 @@ body { font-size: 15px; line-height: 1.42; }
   color: rgba(235,238,242,.45);
   padding: 0 4px;
 }
+
+/* =========================================================
+   HA Switch — modern horizontal pill (Home + Lights only)
+   Used by lightSwitch() in app.js. Keeps data-toggle contract.
+   ========================================================= */
+.ha-switch {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  border: 0;
+  padding: 6px;
+  margin: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform .18s cubic-bezier(.32,.72,0,1);
+}
+.ha-switch:active { transform: scale(.94); }
+.ha-switch:focus-visible { box-shadow: 0 0 0 3px rgba(214,255,77,.35); }
+
+.ha-switch__track {
+  position: relative;
+  display: inline-block;
+  width: 56px;
+  height: 32px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.10);
+  box-shadow:
+    inset 0 1px 2px rgba(0,0,0,.45),
+    inset 0 -1px 0 rgba(255,255,255,.04);
+  transition:
+    background .28s cubic-bezier(.32,.72,0,1),
+    border-color .28s cubic-bezier(.32,.72,0,1),
+    box-shadow .28s cubic-bezier(.32,.72,0,1);
+}
+
+.ha-switch__thumb {
+  position: absolute;
+  top: 50%;
+  left: 3px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #ffffff 0%, #e6ebf0 100%);
+  box-shadow:
+    0 2px 6px rgba(0,0,0,.45),
+    0 0 0 1px rgba(0,0,0,.18),
+    inset 0 1px 0 rgba(255,255,255,.9);
+  transform: translate(0, -50%);
+  transition: transform .32s cubic-bezier(.34,1.56,.64,1);
+  will-change: transform;
+}
+
+.ha-switch.is-on .ha-switch__track {
+  background: linear-gradient(135deg, #d6ff4d 0%, #a8e83a 100%);
+  border-color: rgba(214,255,77,.55);
+  box-shadow:
+    inset 0 1px 2px rgba(0,0,0,.18),
+    0 0 0 1px rgba(214,255,77,.18),
+    0 0 18px -2px rgba(214,255,77,.55);
+}
+.ha-switch.is-on .ha-switch__thumb {
+  transform: translate(24px, -50%);
+  background: linear-gradient(180deg, #ffffff 0%, #f0fbe2 100%);
+  box-shadow:
+    0 2px 8px rgba(0,0,0,.35),
+    0 0 0 1px rgba(0,0,0,.10),
+    inset 0 1px 0 rgba(255,255,255,1);
+}
+
+/* Hover affordance on desktop */
+@media (hover: hover) {
+  .ha-switch:hover .ha-switch__track { border-color: rgba(255,255,255,.18); }
+  .ha-switch.is-on:hover .ha-switch__track {
+    box-shadow:
+      inset 0 1px 2px rgba(0,0,0,.18),
+      0 0 0 1px rgba(214,255,77,.28),
+      0 0 24px -2px rgba(214,255,77,.7);
+  }
+}
+
+/* Compact variant for tighter grids on mobile */
+@media (max-width: 520px) {
+  .ha-switch__track { width: 50px; height: 28px; }
+  .ha-switch__thumb { width: 22px; height: 22px; left: 3px; }
+  .ha-switch.is-on .ha-switch__thumb { transform: translate(22px, -50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ha-switch, .ha-switch__track, .ha-switch__thumb { transition: none; }
+}
