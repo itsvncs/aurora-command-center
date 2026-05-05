@@ -1,58 +1,36 @@
-# Salvar Aurora Dashboard Rules como memória persistente
+## Objetivo
 
-Transformar o `AURORA_DASH_RULES.md` em memórias estruturadas do projeto (`mem://`) para que as regras sejam aplicadas automaticamente em **todas as sessões futuras**, sem precisar relembrar.
+Como o Codex faz ajustes do outro lado entre as nossas viradas, o `codebase-context` que recebo no início de cada mensagem pode estar desatualizado. Vou gravar uma regra Core que me obriga a reler os arquivos do dashboard **na mesma virada da edição**, antes de qualquer alteração.
 
-## Estratégia
+## Por que Core (e não memória detalhada)
 
-A memória do projeto tem dois níveis:
-- **Core** (`mem://index.md`) — regras curtas aplicadas a TODA ação automaticamente
-- **Memórias detalhadas** — arquivos referenciados, lidos sob demanda quando o tópico é relevante
+Regras Core ficam sempre ativas, em toda mensagem, sem precisar eu "lembrar de consultar". É exatamente o que precisamos: uma trava automática.
 
-As regras do Aurora são críticas e específicas da dashboard, então vou usar **ambos**: regras universais no Core + arquivos detalhados por tema.
+## Mudanças
 
-## Arquivos a criar
+### 1. `mem://index.md` — adicionar 2 linhas no Core
 
-### 1. `mem://index.md` (índice + regras Core)
-Regras universais sempre ativas:
-- Fonte de verdade visual: `public/dashboard/` (nunca tratar deploy publicado como fonte)
-- Não sobrescrever dashboard inteira — aplicar apenas o delta
-- Lovable PODE alterar: layout, componentes, CSS, responsividade, copy
-- Lovable NÃO PODE alterar sozinho: integração HA, WebSocket, auth, WebRTC/go2rtc, contratos de id/data-*
-- Se markup mudar, `app.js` deve ser ajustado no mesmo lote
+Acrescentar ao bloco Core existente:
 
-### 2. `mem://features/dashboard-html-contracts` (constraint)
-Lista completa dos IDs e `data-*` intocáveis:
-`#view`, `#pageTitle`, `#pageSub`, `#wxTemp`, `#wxLocation`, `#wxIcon`, `#searchInput`, `data-route`, `data-route-go`, `data-home-camera`, `data-camera-feed`, `data-toggle`, `data-entity`
+> Codex edita `public/dashboard/` em paralelo. Antes de editar QUALQUER arquivo em `public/dashboard/`, é obrigatório `code--view` no arquivo alvo na MESMA virada — nunca confiar no codebase-context pré-carregado nem em memória de viradas anteriores.
+>
+> Antes de bumpar `?v=` no `index.html` ou `CACHE` no `sw.js`, ler ambos para pegar a versão atual e incrementar a partir dela — nunca chutar valor.
 
-### 3. `mem://features/babytracker` (feature)
-Regras do Babytracker:
-- Preservar: WebRTC do berço, botão Reconectar, talk-back, câmera dominante
-- Apenas 3 controles: Teto, Led Esther, Aquecedor
-- NÃO reintroduzir: mamada, troca, sono, timeline/log no card de controles
-- NÃO voltar pra snapshot no lugar de WebRTC
+Mantenho todo o resto do índice intacto (escrita do `index.md` é overwrite, então preservo Core atual + lista de Memories).
 
-### 4. `mem://constraints/dashboard-anti-patterns` (constraint)
-Padrões proibidos sem ordem explícita:
-- Botões Ligar/Parar separados pra ruído branco quando já existe toggle
-- Cards gigantes de cabeçalho em Lights
-- Quebra de tabs da hero em duas linhas
-- Topbar que esconde botões no tablet
-- Injeções tardias fora do `renderBaby()`
+### 2. Sem novos arquivos de memória
 
-### 5. `mem://features/publish-flow` (feature)
-Fluxo de publicação local (referência):
-- Visual no GitHub → `public/dashboard/`
-- Staging local: `www/aurora-command-center/update/`
-- Deploy: `www/aurora-command-center/`
-- Comando: `.\_tools\aurora-gitupdate.ps1` (com `-DryRun` ou `-Force`)
+A regra é curta e universal — não precisa de arquivo detalhado separado.
 
-## Resultado esperado
+## Escopo da releitura obrigatória
 
-Depois de aprovado, em qualquer sessão futura, ao tocar na dashboard eu vou:
-1. Já saber automaticamente as regras Core (sem precisar ler nada)
-2. Consultar os arquivos detalhados quando o tópico bater (ex: mexer no Babytracker → leio `mem://features/babytracker`)
-3. Nunca quebrar contratos de HTML nem reintroduzir padrões proibidos
+- **Sempre relê**: tudo em `public/dashboard/` (`app.js`, `styles.css`, `index.html`, `sw.js`, `baby-cinema.css`, `demo-mode.js`, `v3.css` e qualquer outro que entre depois).
+- **Não obriga releitura**: `src/routes/`, `src/components/` etc — esses só o Lovable mexe, conflito com Codex é improvável. Se quiser estender depois, é um ajuste de uma linha.
 
-O arquivo original `AURORA_DASH_RULES.md` continua no repo como documentação humana — a memória é o espelho operacional pra mim.
+## Como isso muda meu comportamento
 
-Aprova pra eu executar?
+Toda vez que você pedir mudança no dashboard, minha primeira ação visível será um `code--view` (em paralelo nos arquivos relevantes — não fica lento). Só depois aplico o `code--line_replace`. Se eu pular, você pode me cobrar citando esta regra.
+
+## Aprovação
+
+Aprova que eu já gravo? É 1 edição em `mem://index.md`, sem tocar em código.
