@@ -771,6 +771,7 @@ document.addEventListener("pointerup", () => {
 (async () => {
   const route = (location.hash || "#home").slice(1);
   state.route = ROUTES.includes(route) ? route : "home";
+  document.body.toggleAttribute("data-baby-cinema", state.route === "baby");
   await bootstrap();
 })();
 
