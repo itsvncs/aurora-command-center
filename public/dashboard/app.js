@@ -2794,21 +2794,12 @@ setTimeout(() => { paintHouseDot(); setConn(state.connected ? "ok" : "warn"); },
      #11 · Timeline berço (eventos recentes)
      ========================================================= */
   async function injectBabyTimeline() {
+    // Removido a pedido do usuário: não exibir histórico de eventos abaixo dos controles.
+    // Função mantida como no-op para preservar chamadas existentes.
     if (state.route !== "baby") return;
     const ctrls = view.querySelector(".baby-ctrls");
-    if (!ctrls || view.querySelector(".baby-timeline")) return;
-    try {
-      const since = new Date(Date.now() - 12 * 3600 * 1000).toISOString();
-      const ents = [ENTITY_MAP.baby.occupied, ENTITY_MAP.baby.face].join(",");
-      const data = await haFetch(`/api/logbook/${encodeURIComponent(since)}?entity=${ents}`);
-      if (!Array.isArray(data) || !data.length) return;
-      const items = data.slice(-10).reverse();
-      const html = `<div class="baby-timeline">${items.map(it => {
-        const ts = it.when ? new Date(it.when).toLocaleTimeString("pt-BR", { hour:"2-digit", minute:"2-digit"}) : "";
-        return `<div class="it"><span>${(it.message || it.state || "").slice(0,40)}</span><span class="ts">${ts}</span></div>`;
-      }).join("")}</div>`;
-      ctrls.insertAdjacentHTML("beforeend", html);
-    } catch {}
+    const old = ctrls && ctrls.querySelector(".baby-timeline");
+    if (old) old.remove();
   }
 
   /* =========================================================
