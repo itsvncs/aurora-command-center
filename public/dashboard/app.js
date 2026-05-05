@@ -761,6 +761,25 @@ searchInput?.addEventListener("keydown", (e) => {
 
 window.addEventListener("hashchange", () => go((location.hash || "#home").slice(1)));
 window.addEventListener("beforeunload", stopCameraFeeds);
+
+/* ESC sai do modo cinema do Babytracker */
+window.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && state.route === "baby") go("home");
+});
+
+/* Ripple universal — ativa em qualquer botão com .ripple */
+document.addEventListener("pointerdown", (e) => {
+  const target = e.target.closest(".ripple");
+  if (!target) return;
+  const rect = target.getBoundingClientRect();
+  target.style.setProperty("--rx", `${e.clientX - rect.left}px`);
+  target.style.setProperty("--ry", `${e.clientY - rect.top}px`);
+  target.classList.remove("is-rippling");
+  // force reflow so animation restarts
+  void target.offsetWidth;
+  target.classList.add("is-rippling");
+  setTimeout(() => target.classList.remove("is-rippling"), 600);
+});
 document.addEventListener("pointerup", () => {
   const active = document.activeElement;
   if (!active) return;
