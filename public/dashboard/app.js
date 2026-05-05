@@ -312,12 +312,21 @@ function lightBtn(id, size = "") {
   </button>`;
 }
 
+// New modern horizontal pill switch — used on Home & Lights pages.
+// Keeps data-toggle contract so existing handler in app.js still toggles HA entity.
+function lightSwitch(id) {
+  const on = isOn(id);
+  return `<button class="ha-switch ${on ? "is-on" : ""}" data-toggle="${id}" role="switch" aria-checked="${on ? "true" : "false"}" aria-label="Ligar/desligar ${friendly(id, id)}">
+    <span class="ha-switch__track"><span class="ha-switch__thumb"></span></span>
+  </button>`;
+}
+
 function roomCard(id, name = null, meta = "Grupo") {
   const label = name || friendly(id, id);
   return `
     <article class="card room-card ${isOn(id) ? "is-on" : ""}" data-entity="${id}" data-group-key="${id}">
       <div class="top"><div class="card-head"><span class="card-title">${meta}</span><div class="card-icon">${iconSvg("light")}</div></div></div>
-      <div class="row"><div><div class="name">${label}</div><div class="stat">${formatState(id)}</div></div>${lightBtn(id)}</div>
+      <div class="row"><div><div class="name">${label}</div><div class="stat">${formatState(id)}</div></div>${lightSwitch(id)}</div>
     </article>`;
 }
 
@@ -328,7 +337,7 @@ function lightCard(item) {
   const fill = pct != null ? pct : (isOn(item.id) ? 88 : 22);
   return `
     <article class="card light-card" data-entity="${item.id}">
-      <div class="top"><div><div class="nm">${label}</div><div class="sb">${item.subtitle} · ${status}</div></div>${lightBtn(item.id)}</div>
+      <div class="top"><div><div class="nm">${label}</div><div class="sb">${item.subtitle} · ${status}</div></div>${lightSwitch(item.id)}</div>
       <div class="slider"><span style="width:${fill}%"></span></div>
     </article>`;
 }
