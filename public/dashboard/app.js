@@ -1,4 +1,4 @@
-﻿const ROUTES = ["home", "lights", "climate", "security", "media", "baby"];
+const ROUTES = ["home", "lights", "climate", "security", "media", "baby"];
 
 const ENTITY_MAP = {
   weather: "weather.casa",
@@ -1242,7 +1242,7 @@ function openHouseModeModal() {
 document.getElementById("houseBtn")?.addEventListener("click", () => { haptic(8); openHouseModeModal(); });
 
 /* =========================================================
-   CONFIRMAÇÃO (alarme / porta / sair)
+   CONFIRMAÇÍO (alarme / porta / sair)
    ========================================================= */
 function openConfirm(title, message, onConfirm) {
   openModal(`
@@ -1737,7 +1737,7 @@ bindInteractions = function () {
     stopSecurityRotate();
   }
 
-  // Click em hero (que NÃO seja num botão interno) -> fullscreen
+  // Click em hero (que NÍO seja num botão interno) -> fullscreen
   document.querySelectorAll("[data-camera-fullscreen]").forEach((el) => {
     el.addEventListener("click", (e) => {
       if (e.target.closest("button, [data-toggle], [data-home-camera], [data-security-camera]")) return;
