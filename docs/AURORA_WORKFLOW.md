@@ -40,6 +40,22 @@ O Codex é dono de:
 4. Se o markup mudar, `public/dashboard/app.js` deve mudar no mesmo lote.
 5. Babytracker é sensível. Não alterar comportamento funcional sem pedido explícito.
 6. O deploy publicado pode conter overrides locais de integração. Eles devem ser preservados.
+7. Todo arquivo de `public/dashboard/` deve permanecer em `UTF-8` limpo. Se aparecer mojibake (`Ã`, `Â`, `â`, `�`, `??` em lugar de acentos ou símbolos), a mudança deve ser bloqueada antes do publish.
+
+## Regra de encoding
+- Fonte visual obrigatória em `UTF-8`.
+- Não salvar em ANSI / Latin-1 / Windows-1252.
+- Antes de publicar, validar visualmente e por diff se textos como estes continuam corretos:
+  - `Serviços`
+  - `Mídia`
+  - `Segurança`
+  - `Berço`
+  - `Ruído branco`
+  - `Em execução`
+  - `°`
+  - `·`
+  - `◀`, `▶`, `❚❚`, `🎤`
+- Nunca tratar correção de encoding apenas no deploy como solução final. A correção precisa existir primeiro no repositório.
 
 ## Contratos que não podem quebrar
 Exemplos mínimos:
@@ -64,10 +80,11 @@ Exemplos mínimos:
 1. Você altera o visual no Lovable.
 2. O Lovable grava no repositório GitHub da Aurora.
 3. O Codex puxa a versão nova do GitHub.
-4. O Codex compara com a versão publicada.
-5. O Codex aplica apenas o delta visual.
-6. O Codex preserva as integrações locais.
-7. O Codex publica em `www/aurora-command-center/`.
+4. O Codex valida encoding e bloqueia o publish se houver mojibake.
+5. O Codex compara com a versão publicada.
+6. O Codex aplica apenas o delta visual.
+7. O Codex preserva as integrações locais.
+8. O Codex publica em `www/aurora-command-center/`.
 
 ## O que não fazer
 - Não editar manualmente `www/aurora-command-center/` como fonte visual.
@@ -76,17 +93,6 @@ Exemplos mínimos:
 - Não deixar auto-sync cego sobrescrever integrações locais.
 
 ## Estado atual do ambiente
-Atualmente esta máquina não tem `git` instalado.
-Por isso o fluxo de sincronização está usando pull do GitHub raw + merge/publicação local.
-Quando `git` estiver disponível, o fluxo pode migrar para checkout local do mesmo repositório.
-
-## Próximo passo para sincronização real de Git
-Para conectar o repositório diretamente nesta máquina, é necessário:
-- instalar `git`
-- clonar o repo localmente
-- usar esse checkout como base de comparação/publicação
-
-Enquanto isso não existir, o fluxo oficial continua sendo:
-- GitHub como fonte visual
-- merge seletivo local
-- publicação controlada
+- `git` está instalado nesta máquina.
+- O repositório local usado para sync fica em `repos/aurora-command-center`.
+- O publish continua seletivo e controlado, nunca overwrite cego.

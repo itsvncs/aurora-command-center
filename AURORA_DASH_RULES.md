@@ -12,6 +12,23 @@ Este documento define regras para alterar a dashboard sem quebrar a integração
 - Não sobrescrever a dashboard inteira sem comparar.
 - Sempre identificar o que mudou e aplicar apenas o delta visual quando houver integração local já ajustada.
 
+## Regra de Encoding
+- Todos os arquivos de `public/dashboard/` devem permanecer em `UTF-8` limpo.
+- Não salvar arquivos em ANSI, Latin-1, Windows-1252 ou com recodificação ambígua.
+- Antes de publicar qualquer mudança visual, validar que não foram introduzidos sinais de mojibake como:
+  - `Ã`
+  - `Â`
+  - `â`
+  - `�`
+  - `??` no lugar de acentos, símbolos ou ícones
+- Se aparecer qualquer um desses padrões, a mudança deve ser tratada como quebrada e não deve ser publicada.
+- Caracteres críticos que precisam permanecer corretos:
+  - `ç`, `ã`, `á`, `é`, `í`, `ó`, `ú`, `ê`, `ô`
+  - `°`
+  - `·`
+  - ícones/texto simbólico como `◀`, `▶`, `❚❚`, `🎤`
+- Nunca corrigir encoding diretamente no deploy publicado como solução definitiva. A correção deve acontecer primeiro na fonte visual do repositório.
+
 ## Contratos Obrigatórios do HTML
 Estes ids e atributos não podem ser removidos ou renomeados sem ajuste correspondente no `app.js`:
 - `#view`
@@ -67,9 +84,10 @@ Se o markup mudar, o `app.js` precisa ser ajustado no mesmo lote.
 ## Fluxo Recomendado
 1. Atualizar o visual no GitHub em `public/dashboard`.
 2. Rodar `._tools/aurora-gitupdate.ps1 -DryRun`.
-3. Comparar o resultado com a versão publicada.
-4. Preservar integrações locais críticas.
-5. Publicar.
+3. Validar encoding e rejeitar a mudança se houver mojibake.
+4. Comparar o resultado com a versão publicada.
+5. Preservar integrações locais críticas.
+6. Publicar.
 
 ## Comandos Locais
 Atualizar do GitHub e publicar:
