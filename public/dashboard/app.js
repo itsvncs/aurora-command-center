@@ -1,4 +1,4 @@
-const ROUTES = ["home", "lights", "climate", "security", "media", "baby"];
+﻿const ROUTES = ["home", "lights", "climate", "security", "media", "baby"];
 
 const ENTITY_MAP = {
   weather: "weather.casa",
@@ -13,20 +13,20 @@ const ENTITY_MAP = {
   lights: {
     sala: [
       { id: "switch.cozylife_a50d", name: "Mesa", subtitle: "Sala" },
-      { id: "switch.sofa_interruptor_1", name: "Sofá", subtitle: "Sala" },
+      { id: "switch.sofa_interruptor_1", name: "Sof\u00E1", subtitle: "Sala" },
       { id: "light.sala_4", name: "Sala", subtitle: "Grupo" },
     ],
     cozinha: [
       { id: "switch.cozylife_57cb", name: "Pia", subtitle: "Cozinha" },
-      { id: "switch.balcao_interruptor_1", name: "Balcão", subtitle: "Cozinha" },
+      { id: "switch.balcao_interruptor_1", name: "Balc\u00E3o", subtitle: "Cozinha" },
       { id: "light.cozinha", name: "Cozinha", subtitle: "Grupo" },
       { id: "light.lavanderialocal", name: "Lavanderia", subtitle: "Cozinha" },
     ],
     servicos: [
-      { id: "switch.hall_interruptor_1", name: "Lavabo", subtitle: "Serviços" },
-      { id: "light.sacadalocal", name: "Sacada", subtitle: "Serviços" },
-      { id: "light.churrasqueiralocal", name: "Churrasqueira", subtitle: "Serviços" },
-      { id: "light.porta", name: "Porta", subtitle: "Serviços" },
+      { id: "switch.hall_interruptor_1", name: "Lavabo", subtitle: "Servi\u00E7os" },
+      { id: "light.sacadalocal", name: "Sacada", subtitle: "Servi\u00E7os" },
+      { id: "light.churrasqueiralocal", name: "Churrasqueira", subtitle: "Servi\u00E7os" },
+      { id: "light.porta", name: "Porta", subtitle: "Servi\u00E7os" },
     ],
     esther: [
       { id: "light.teto", name: "Teto", subtitle: "Esther" },
@@ -46,7 +46,7 @@ const ENTITY_MAP = {
     alarm: "alarm_control_panel.ezviz_alarm",
   },
   climate: {
-    temp: "sensor.casa_temperatura",
+    temp: "sensor.wifiwen_shi_du_ji_temperatura",
     humidity: "sensor.casa_umidade",
     estherTemp: "sensor.wifiwen_shi_du_ji_temperatura",
     compensated: "sensor.temperatura_compensada",
@@ -86,13 +86,13 @@ const HOME_CAMERAS = [
 const DISPLAY_NAMES = {
   "light.sala_4": "Sala",
   "light.cozinha": "Cozinha",
-  "light.servicos": "Serviços",
+  "light.servicos": "Servi\u00E7os",
   "light.quarto_esther": "Quarto Esther",
   "light.suite": "Suite",
   "switch.cozylife_a50d": "Mesa",
-  "switch.sofa_interruptor_1": "Sofá",
+  "switch.sofa_interruptor_1": "Sof\u00E1",
   "switch.cozylife_57cb": "Pia",
-  "switch.balcao_interruptor_1": "Balcão",
+  "switch.balcao_interruptor_1": "Balc\u00E3o",
   "light.lavanderialocal": "Lavanderia",
   "switch.hall_interruptor_1": "Lavabo",
   "light.sacadalocal": "Sacada",
@@ -111,7 +111,7 @@ const DISPLAY_NAMES = {
   "media_player.echo_pop_de_vinicius": "Echo Sala",
   "media_player.echo_quarto": "Echo Quarto",
   "media_player.tablet": "Tablet",
-  "camera.berco_2": "Berço",
+  "camera.berco_2": "Ber\u00E7o",
   "camera.quarto_esther_2": "Quarto Esther",
   "camera.sala_2": "Sala",
   "camera.cozinha_2": "Cozinha",
@@ -144,11 +144,11 @@ const wxIcon = $("#wxIcon");
 const searchInput = $("#searchInput");
 
 const titleMap = {
-  home: ["Casa", "Visão geral da casa em tempo real."],
-  lights: ["Luzes", "Controles individuais por cômodo."],
-  climate: ["Clima", "Temperatura, umidade e conforto térmico."],
-  security: ["Segurança", "Porta, alarme e status da casa."],
-  media: ["Mídia", "Players e reprodução da casa."],
+  home: ["Casa", "Vis\u00E3o geral da casa em tempo real."],
+  lights: ["Luzes", "Controles individuais por c\u00F4modo."],
+  climate: ["Clima", "Temperatura, umidade e conforto t\u00E9rmico."],
+  security: ["Seguran\u00E7a", "Porta, alarme e status da casa."],
+  media: ["M\u00EDdia", "Players e reprodu\u00E7\u00E3o da casa."],
   baby: ["Babytracker", "Monitoramento do quarto da Esther."],
 };
 
@@ -174,7 +174,7 @@ function parseToken() {
 
 async function haFetch(path, options = {}) {
   const token = state.token || parseToken();
-  if (!token) throw new Error("Token do Home Assistant não encontrado.");
+  if (!token) throw new Error("Token do Home Assistant no encontrado.");
   state.token = token;
   const headers = new Headers(options.headers || {});
   headers.set("Authorization", `Bearer ${token}`);
@@ -220,6 +220,14 @@ function friendly(id, fallback = id) {
 function num(id, fallback = 0) {
   const value = parseFloat(entityState(id));
   return Number.isFinite(value) ? value : fallback;
+}
+
+function houseTemp(fallback = 0) {
+  const primary = num(ENTITY_MAP.climate.temp, Number.NaN);
+  if (Number.isFinite(primary) && primary > 0) return primary;
+  const tuya = num(ENTITY_MAP.climate.estherTemp, Number.NaN);
+  if (Number.isFinite(tuya) && tuya > 0) return tuya;
+  return fallback;
 }
 
 function brightnessPct(id) {
@@ -271,14 +279,14 @@ function weatherIconSvg(conditionRaw) {
 }
 
 function formatState(id) {
-  const s = entityState(id, "Indisponível");
+  const s = entityState(id, "Indisponvel");
   const map = {
     on: "Ligado",
     off: "Desligado",
     playing: "Tocando",
     paused: "Pausado",
     idle: "Parado",
-    unavailable: "Indisponível",
+    unavailable: "Indisponvel",
     unknown: "Desconhecido",
     disarmed: "Desarmado",
     armed_away: "Armado fora",
@@ -312,7 +320,7 @@ function lightBtn(id, size = "") {
   </button>`;
 }
 
-// New modern horizontal pill switch — used on Home & Lights pages.
+// New modern horizontal pill switch  used on Home & Lights pages.
 // Keeps data-toggle contract so existing handler in app.js still toggles HA entity.
 function lightSwitch(id) {
   const on = isOn(id);
@@ -337,7 +345,7 @@ function lightCard(item) {
   const fill = pct != null ? pct : (isOn(item.id) ? 88 : 22);
   return `
     <article class="card light-card" data-entity="${item.id}">
-      <div class="top"><div><div class="nm">${label}</div><div class="sb">${item.subtitle} · ${status}</div></div>${lightSwitch(item.id)}</div>
+      <div class="top"><div><div class="nm">${label}</div><div class="sb">${item.subtitle}  ${status}</div></div>${lightSwitch(item.id)}</div>
       <div class="slider"><span style="width:${fill}%"></span></div>
     </article>`;
 }
@@ -348,8 +356,8 @@ function sectionHead(title, sub = "") {
 
 function renderHome() {
   const weather = entity(ENTITY_MAP.weather);
-  const temp = weather?.attributes?.temperature ?? num(ENTITY_MAP.climate.temp, 0);
-  const condition = weather?.state || "indisponível";
+  const temp = houseTemp(Number.isFinite(weather?.attributes?.temperature) ? weather.attributes.temperature : 0);
+  const condition = weather?.state || "indispon\u00EDvel";
   const cam = HOME_CAMERAS.find((c) => c.id === state.activeHomeCamera) || HOME_CAMERAS[0];
   const houseEnt = entity(ENTITY_MAP.houseMode);
   const houseOptions = houseEnt?.attributes?.options || ["Dia", "Noite", "Fora", "Cinema"];
@@ -357,39 +365,39 @@ function renderHome() {
   return `
     <div class="home-grid">
       <section class="card hero" data-camera-fullscreen="${cam.id}">
-        <div class="hero__feed"><img class="hero__feed-img" data-camera-feed="${cam.id}" data-camera-slot="home" alt="Sinal da câmera" /></div>
+        <div class="hero__feed"><img class="hero__feed-img" data-camera-feed="${cam.id}" data-camera-slot="home" alt="Sinal da c\u00E2mera" /></div>
         <div class="hero__overlay">
           <div class="hero__top"><div class="hero__tabs" data-home-camera-tabs>${HOME_CAMERAS.map((c) => `<button class="${c.id === cam.id ? "is-active" : ""}" data-home-camera="${c.id}">${c.label}</button>`).join("")}</div><span class="chip chip--live"><span class="dot"></span> Ao vivo</span></div>
-          <div class="hero__bottom"><div><h3 class="hero__title">Casa</h3><div class="hero__meta" data-home-camera-meta>${cam.label} · ${condition} · ${temp}°C · modo ${houseCurrent}</div></div><div class="hero__actions"><button class="btn btn--ghost" data-route-go="baby">Babytracker</button></div></div>
+          <div class="hero__bottom"><div><h3 class="hero__title">Casa</h3><div class="hero__meta" data-home-camera-meta>${cam.label} · ${condition} · ${temp.toFixed(0)}°C · modo ${houseCurrent}</div></div><div class="hero__actions"><button class="btn btn--ghost" data-route-go="baby">Babytracker</button></div></div>
         </div>
       </section>
       ${roomCard(ENTITY_MAP.groups.sala, "Sala")}
       ${roomCard(ENTITY_MAP.groups.cozinha, "Cozinha")}
-      ${roomCard(ENTITY_MAP.groups.servicos, "Serviços")}
+      ${roomCard(ENTITY_MAP.groups.servicos, "Servi\u00E7os")}
       ${roomCard(ENTITY_MAP.groups.esther, "Quarto Esther")}
       ${roomCard(ENTITY_MAP.groups.suite, "Suite")}
-      <article class="card stat-card"><div class="label">Temperatura interna</div><div class="value">${num(ENTITY_MAP.climate.temp, 0).toFixed(1)}°</div><div class="delta">Umidade ${num(ENTITY_MAP.climate.humidity, 0).toFixed(0)}%</div></article>
-      <article class="card stat-card"><div class="label">Berço</div><div class="value">${isOn(ENTITY_MAP.baby.occupied) ? "Ocupado" : "Livre"}</div><div class="delta ${isOn(ENTITY_MAP.baby.occupied) ? "" : "down"}">Face: ${entityState(ENTITY_MAP.baby.face, "desconhecida")}</div></article>
-      <article class="card stat-card"><div class="label">Segurança</div><div class="value">${formatState(ENTITY_MAP.security.alarm)}</div><div class="delta ${entityState(ENTITY_MAP.security.door) === "on" ? "down" : ""}">Porta ${formatState(ENTITY_MAP.security.door)}</div></article>
+      <article class="card stat-card"><div class="label">Temperatura interna</div><div class="value">${houseTemp(0).toFixed(1)}</div><div class="delta">Umidade ${num(ENTITY_MAP.climate.humidity, 0).toFixed(0)}%</div></article>
+      <article class="card stat-card"><div class="label">Ber\u00E7o</div><div class="value">${isOn(ENTITY_MAP.baby.occupied) ? "Ocupado" : "Livre"}</div><div class="delta ${isOn(ENTITY_MAP.baby.occupied) ? "" : "down"}">Face: ${entityState(ENTITY_MAP.baby.face, "desconhecida")}</div></article>
+      <article class="card stat-card"><div class="label">Seguran\u00E7a</div><div class="value">${formatState(ENTITY_MAP.security.alarm)}</div><div class="delta ${entityState(ENTITY_MAP.security.door) === "on" ? "down" : ""}">Porta ${formatState(ENTITY_MAP.security.door)}</div></article>
     </div>`;
 }
 
 function renderLights() {
   const blocks = Object.entries(ENTITY_MAP.lights).flatMap(([room, items]) => {
-    const roomTitle = room === "esther" ? "Quarto Esther" : room === "servicos" ? "Serviços" : room;
+    const roomTitle = room === "esther" ? "Quarto Esther" : room === "servicos" ? "Servi\u00E7os" : room;
     const filtered = items.filter((item) => matchesQuery(item.name, item.subtitle, roomTitle, friendly(item.id, item.name)));
     if (!filtered.length) return [];
     return [`<h3 class="lights-room-head">${roomTitle}</h3>`, `<div class="lights-room-grid">${filtered.map(lightCard).join("")}</div>`];
   });
-  return `${sectionHead("Luzes", state.query ? `Resultados para \"${state.query}\"` : "Controles individuais por cômodo")}<div class="lights-page">${blocks.join("") || `<article class="card card--solid"><h3 style="margin:0 0 8px;">Nada encontrado</h3><div class="muted">Nenhum dispositivo corresponde à busca.</div></article>`}</div>`;
+  return `${sectionHead("Luzes", state.query ? `Resultados para \"${state.query}\"` : "Controles individuais por c\u00F4modo")}<div class="lights-page">${blocks.join("") || `<article class="card card--solid"><h3 style="margin:0 0 8px;">Nada encontrado</h3><div class="muted">Nenhum dispositivo corresponde à busca.</div></article>`}</div>`;
 }
 
 function renderClimate() {
-  const temp = num(ENTITY_MAP.climate.temp, 0);
+  const temp = houseTemp(0);
   const hum = num(ENTITY_MAP.climate.humidity, 0);
   const esther = num(ENTITY_MAP.climate.estherTemp, 0);
   const compensated = num(ENTITY_MAP.climate.compensated, esther);
-  return `${sectionHead("Clima", "Leituras da casa e do quarto da Esther")}<div class="climate-grid"><article class="card gauge-card"><div class="card-head"><span class="card-title">Casa</span><div class="card-icon">${iconSvg("temp")}</div></div><div class="gauge"><div class="gauge__dial" style="--p:${Math.max(10, Math.min(95, temp * 3.2))}"></div><div class="gauge__center"><strong>${temp.toFixed(1)}°</strong><span>Temperatura</span></div></div></article><article class="card stat-card"><div class="label">Umidade</div><div class="value">${hum.toFixed(0)}%</div><div class="delta">Conforto da casa</div></article><article class="card stat-card"><div class="label">Esther</div><div class="value">${esther.toFixed(1)}°</div><div class="delta">Compensada ${compensated.toFixed(1)}°</div></article></div>`;
+  return `${sectionHead("Clima", "Leituras da casa e do quarto da Esther")}<div class="climate-grid"><article class="card gauge-card"><div class="card-head"><span class="card-title">Casa</span><div class="card-icon">${iconSvg("temp")}</div></div><div class="gauge"><div class="gauge__dial" style="--p:${Math.max(10, Math.min(95, temp * 3.2))}"></div><div class="gauge__center"><strong>${temp.toFixed(1)}</strong><span>Temperatura</span></div></div></article><article class="card stat-card"><div class="label">Umidade</div><div class="value">${hum.toFixed(0)}%</div><div class="delta">Conforto da casa</div></article><article class="card stat-card"><div class="label">Esther</div><div class="value">${esther.toFixed(1)}</div><div class="delta">Compensada ${compensated.toFixed(1)}</div></article></div>`;
 }
 
 function renderSecurity() {
@@ -397,9 +405,9 @@ function renderSecurity() {
   const cur = state.activeSecurityCamera || cams[0].id;
   state.activeSecurityCamera = cur;
   const curLabel = (cams.find((c) => c.id === cur) || cams[0]).label;
-  return `${sectionHead("Segurança", "Câmeras, porta principal e alarme")}<div class="home-grid" style="grid-template-columns:2fr 1fr 1fr;">
+  return `${sectionHead("Seguran\u00E7a", "C\u00E2meras, porta principal e alarme")}<div class="home-grid" style="grid-template-columns:2fr 1fr 1fr;">
     <article class="card hero" style="min-height:380px;grid-row:span 2;" data-camera-fullscreen="${cur}" data-security-hero>
-      <div class="hero__feed"><img class="hero__feed-img" data-camera-feed="${cur}" data-camera-slot="security" alt="Sinal da câmera" /></div>
+      <div class="hero__feed"><img class="hero__feed-img" data-camera-feed="${cur}" data-camera-slot="security" alt="Sinal da c\u00E2mera" /></div>
       <div class="hero__overlay">
         <div class="hero__top">
           <div class="hero__tabs" data-security-camera-tabs>${cams.map((c) => `<button class="${c.id === cur ? "is-active" : ""}" data-security-camera="${c.id}">${c.label}</button>`).join("")}</div>
@@ -421,7 +429,7 @@ function mediaCard(id, label) {
 }
 
 function renderMedia() {
-  return `${sectionHead("Mídia", "Players principais da casa")}<div class="media-grid">${mediaCard(ENTITY_MAP.media.tv, friendly(ENTITY_MAP.media.tv, "TV"))}${mediaCard(ENTITY_MAP.media.firetv, friendly(ENTITY_MAP.media.firetv, "Fire TV"))}${mediaCard(ENTITY_MAP.media.echoSala, friendly(ENTITY_MAP.media.echoSala, "Echo Sala"))}${mediaCard(ENTITY_MAP.media.echoQuarto, friendly(ENTITY_MAP.media.echoQuarto, "Echo Quarto"))}${mediaCard(ENTITY_MAP.media.tablet, friendly(ENTITY_MAP.media.tablet, "Tablet"))}</div>`;
+  return `${sectionHead("M\u00EDdia", "Players principais da casa")}<div class="media-grid">${mediaCard(ENTITY_MAP.media.tv, friendly(ENTITY_MAP.media.tv, "TV"))}${mediaCard(ENTITY_MAP.media.firetv, friendly(ENTITY_MAP.media.firetv, "Fire TV"))}${mediaCard(ENTITY_MAP.media.echoSala, friendly(ENTITY_MAP.media.echoSala, "Echo Sala"))}${mediaCard(ENTITY_MAP.media.echoQuarto, friendly(ENTITY_MAP.media.echoQuarto, "Echo Quarto"))}${mediaCard(ENTITY_MAP.media.tablet, friendly(ENTITY_MAP.media.tablet, "Tablet"))}</div>`;
 }
 
 function toggleRow(id, name, subtitle) {
@@ -435,12 +443,12 @@ function renderBaby() {
   const mediaEnt = entity(mediaId);
   const mediaTitle = mediaEnt?.attributes?.media_title || friendly(mediaId, "Echo Quarto");
   const mediaArtist = mediaEnt?.attributes?.media_artist || formatState(mediaId);
-  return `<div class="baby baby--cinema"><section class="baby__stage card" data-camera-fullscreen="${ENTITY_MAP.baby.camera}"><div class="baby__feed"><img class="feed-img" data-camera-feed="${ENTITY_MAP.baby.camera}" alt="Sinal da câmera" /></div><div class="baby__scrim"></div><div class="baby__hud baby__hud--top"><div class="baby__id"><div class="nm">Esther · Berço</div><div class="meta">Quarto · ${occ ? "ocupado" : "livre"} · ${num(ENTITY_MAP.baby.temp, 0).toFixed(1)}°C</div></div><div class="baby__chips"><span class="chip-live"><span class="pulse"></span>Live</span><span class="chip-soft">Sinal ativo</span><button class="chip-soft chip-btn ripple" data-refresh-camera="${ENTITY_MAP.baby.camera}"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/></svg>Atualizar</button><button class="chip-soft chip-btn chip-exit ripple" data-route-go="home" title="Sair do modo cinema"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></div></div><aside class="baby__panel baby__panel--left"><article class="glass-card baby-card baby-temp"><div class="head"><div class="ttl">Temperatura</div><div class="card-icon">${iconSvg("temp")}</div></div><div class="row" style="justify-content:center;align-items:center;"><div class="ring" style="width:108px;height:108px;"><b style="font-size:24px;">${num(ENTITY_MAP.baby.temp, 0).toFixed(1)}°</b></div></div></article><article class="glass-card baby-card baby-noise ${noiseOn ? "is-on" : ""}" data-entity="${ENTITY_MAP.baby.noise}"><div class="head"><div class="ttl">Ruído branco</div><div class="card-icon">${iconSvg("noise")}</div></div><div class="wave"><svg viewBox="0 0 200 40" fill="none"><path d="M0 20c20 0 20-12 40-12s20 24 40 24 20-24 40-24 20 24 40 24 20-12 40-12" stroke="currentColor" stroke-width="3" stroke-linecap="round" opacity=".8"/></svg></div><div class="btns"><button class="ripple ${noiseOn ? "is-active" : ""}" data-script="${ENTITY_MAP.scripts.noiseOn}">Ligar</button><button class="ripple ${!noiseOn ? "is-active" : ""}" data-script="${ENTITY_MAP.scripts.noiseOff}">Parar</button></div></article></aside><aside class="baby__panel baby__panel--right"><article class="glass-card baby-card baby-ctrls"><div class="head"><div class="ttl">Controles</div><div class="card-icon">${iconSvg("light")}</div></div>${toggleRow(ENTITY_MAP.baby.teto, "Teto", "Luz principal")}${toggleRow(ENTITY_MAP.baby.led, "Led Esther", "Apoio")}${toggleRow(ENTITY_MAP.baby.heater, "Aquecedor", "Conforto")}</article></aside><div class="baby__dock"><article class="glass-card baby-card baby-media ${entityState(mediaId) === "paused" ? "is-paused" : ""}" data-entity="${mediaId}"><div class="dock-info"><div class="nowplay">${mediaTitle}</div><div class="artist">${mediaArtist}</div></div><div class="ctrls"><button class="btn ripple" data-media-prev="${mediaId}">◀</button><button class="pp ripple" data-media-playpause="${mediaId}">${entityState(mediaId) === "playing" ? "❚❚" : "▶"}</button><div class="vol"><i></i><i></i><i></i><i></i></div></div><div class="dock-actions"><button class="btn btn--ghost ripple" data-route-go="security">Segurança</button></div></article></div></section></div>`;
+  return `<div class="baby baby--cinema"><section class="baby__stage card" data-camera-fullscreen="${ENTITY_MAP.baby.camera}"><div class="baby__feed"><img class="feed-img" data-camera-feed="${ENTITY_MAP.baby.camera}" alt="Sinal da c\u00E2mera" /></div><div class="baby__scrim"></div><div class="baby__hud baby__hud--top"><div class="baby__id"><div class="nm">Esther \u00B7 Ber\u00E7o</div><div class="meta">Quarto \u00B7 ${occ ? "ocupado" : "livre"} \u00B7 ${num(ENTITY_MAP.baby.temp, 0).toFixed(1)}\u00B0C</div></div><div class="baby__chips"><span class="chip-live"><span class="pulse"></span>Live</span><span class="chip-soft">Sinal ativo</span><button class="chip-soft chip-btn ripple" data-refresh-camera="${ENTITY_MAP.baby.camera}"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/></svg>Atualizar</button><button class="chip-soft chip-btn chip-exit ripple" data-route-go="home" title="Sair do modo cinema"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></div></div><aside class="baby__panel baby__panel--left"><article class="glass-card baby-card baby-temp"><div class="head"><div class="ttl">Temperatura</div><div class="card-icon">${iconSvg("temp")}</div></div><div class="row" style="justify-content:center;align-items:center;"><div class="ring" style="width:108px;height:108px;"><b style="font-size:24px;">${num(ENTITY_MAP.baby.temp, 0).toFixed(1)}</b></div></div></article><article class="glass-card baby-card baby-noise ${noiseOn ? "is-on" : ""}" data-entity="${ENTITY_MAP.baby.noise}"><div class="head"><div class="ttl">Ru\u00EDdo branco</div><div class="card-icon">${iconSvg("noise")}</div></div><div class="wave"><svg viewBox="0 0 200 40" fill="none"><path d="M0 20c20 0 20-12 40-12s20 24 40 24 20-24 40-24 20 24 40 24 20-12 40-12" stroke="currentColor" stroke-width="3" stroke-linecap="round" opacity=".8"/></svg></div><div class="btns"><button class="ripple ${noiseOn ? "is-active" : ""}" data-script="${ENTITY_MAP.scripts.noiseOn}">Ligar</button><button class="ripple ${!noiseOn ? "is-active" : ""}" data-script="${ENTITY_MAP.scripts.noiseOff}">Parar</button></div></article></aside><aside class="baby__panel baby__panel--right"><article class="glass-card baby-card baby-ctrls"><div class="head"><div class="ttl">Controles</div><div class="card-icon">${iconSvg("light")}</div></div>${toggleRow(ENTITY_MAP.baby.teto, "Teto", "Luz principal")}${toggleRow(ENTITY_MAP.baby.led, "Led Esther", "Apoio")}${toggleRow(ENTITY_MAP.baby.heater, "Aquecedor", "Conforto")}</article></aside><div class="baby__dock"><article class="glass-card baby-card baby-media ${entityState(mediaId) === "paused" ? "is-paused" : ""}" data-entity="${mediaId}"><div class="dock-info"><div class="nowplay">${mediaTitle}</div><div class="artist">${mediaArtist}</div></div><div class="ctrls"><button class="btn ripple" data-media-prev="${mediaId}"></button><button class="pp ripple" data-media-playpause="${mediaId}">${entityState(mediaId) === "playing" ? "" : ""}</button><div class="vol"><i></i><i></i><i></i><i></i></div></div><div class="dock-actions"><button class="btn btn--ghost ripple" data-route-go="security">Seguran\u00E7a</button></div></article></div></section></div>`;
 }
 
 function renderError() {
   const needsToken = (state.error || "").includes("401") || (state.error || "").includes("Token");
-  return `<article class="card card--solid"><h2 style="margin-top:0;">Erro de integração</h2><p>${state.error}</p>${needsToken ? `<div style="display:grid;gap:12px;max-width:640px;margin-top:18px;"><input id="tokenInput" type="password" placeholder="Cole aqui um Long-Lived Access Token do Home Assistant" style="width:100%;padding:14px 16px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:inherit;outline:none;" /><div style="display:flex;gap:12px;"><button class="btn btn--lime" id="saveTokenBtn">Salvar token</button><button class="btn" id="clearTokenBtn">Limpar token</button></div></div>` : `<button class="btn btn--lime" id="retryBtn">Tentar novamente</button>`}</article>`;
+  return `<article class="card card--solid"><h2 style="margin-top:0;">Erro de integra\u00E7\u00E3o</h2><p>${state.error}</p>${needsToken ? `<div style="display:grid;gap:12px;max-width:640px;margin-top:18px;"><input id="tokenInput" type="password" placeholder="Cole aqui um Long-Lived Access Token do Home Assistant" style="width:100%;padding:14px 16px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:inherit;outline:none;" /><div style="display:flex;gap:12px;"><button class="btn btn--lime" id="saveTokenBtn">Salvar token</button><button class="btn" id="clearTokenBtn">Limpar token</button></div></div>` : `<button class="btn btn--lime" id="retryBtn">Tentar novamente</button>`}</article>`;
 }
 
 function patchHeader() {
@@ -448,7 +456,7 @@ function patchHeader() {
   pageTitle.textContent = title;
   pageSub.textContent = state.error && !state.connected ? state.error : sub;
   const weather = entity(ENTITY_MAP.weather);
-  const localTemp = num(ENTITY_MAP.climate.temp, Number.NaN);
+  const localTemp = houseTemp(Number.NaN);
   const weatherTemp = weather?.attributes?.temperature;
   const temp = Number.isFinite(localTemp) ? localTemp : (Number.isFinite(weatherTemp) ? weatherTemp : 0);
   const condition = weather?.state || "";
@@ -473,8 +481,8 @@ function patchEntityUI(id) {
     if (el.classList.contains("light-card")) {
       const sb = el.querySelector(".sb");
       if (sb) {
-        const subtitle = sb.textContent.split(" · ")[0];
-        sb.textContent = `${subtitle} · ${pct != null && current ? `${pct}%` : formatState(id)}`;
+        const subtitle = sb.textContent.split("  ")[0];
+        sb.textContent = `${subtitle}  ${pct != null && current ? `${pct}%` : formatState(id)}`;
       }
       const slider = el.querySelector(".slider span");
       if (slider) slider.style.width = `${pct != null ? pct : (current ? 88 : 22)}%`;
@@ -536,10 +544,10 @@ function updateHomeCameraMeta() {
   const meta = $("[data-home-camera-meta]");
   if (!meta) return;
   const weather = entity(ENTITY_MAP.weather);
-  const temp = weather?.attributes?.temperature ?? num(ENTITY_MAP.climate.temp, 0);
-  const condition = weather?.state || "indisponível";
+  const temp = houseTemp(Number.isFinite(weather?.attributes?.temperature) ? weather.attributes.temperature : 0);
+  const condition = weather?.state || "indispon\u00EDvel";
   const cam = HOME_CAMERAS.find((item) => item.id === state.activeHomeCamera) || HOME_CAMERAS[0];
-  meta.textContent = `${cam.label} · ${condition} · ${temp}°C · modo ${entityState(ENTITY_MAP.houseMode, "Dia")}`;
+  meta.textContent = `${cam.label}  ${condition} ? ${temp}?C ? modo ${entityState(ENTITY_MAP.houseMode, "Dia")}`;
 }
 
 function switchHomeCamera(nextId) {
@@ -776,7 +784,7 @@ window.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && state.route === "baby") go("home");
 });
 
-/* Ripple universal — ativa em qualquer .ripple ou em toggle-row do Babytracker */
+/* Ripple universal  ativa em qualquer .ripple ou em toggle-row do Babytracker */
 document.addEventListener("pointerdown", (e) => {
   const target = e.target.closest(".ripple, .baby--cinema .baby-ctrls .toggle-row");
   if (!target) return;
@@ -814,10 +822,10 @@ function applyTheme(name) {
   if (btn) {
     btn.dataset.themeMode = name;
     btn.title = name === "normal"
-      ? "Modo claro (atual) — clique para escuro"
+      ? "Modo claro (atual)  clique para escuro"
       : name === "dark"
-      ? "Modo escuro (atual) — clique para noturno"
-      : "Modo noturno (atual) — clique para voltar";
+      ? "Modo escuro (atual)  clique para noturno"
+      : "Modo noturno (atual)  clique para voltar";
   }
 }
 function cycleTheme() {
@@ -829,7 +837,7 @@ document.getElementById("themeBtn")?.addEventListener("click", cycleTheme);
 applyTheme(localStorage.getItem("auroraTheme") || "normal");
 
 /* =========================================================
-   MODAL — universal popup
+   MODAL  universal popup
    ========================================================= */
 const modalEl = document.getElementById("modal");
 const sheetEl = document.getElementById("modalSheet");
@@ -856,7 +864,7 @@ const COLOR_SWATCHES = [
   { name: "Quente",   rgb: [255, 180, 107] },
   { name: "Branco",   rgb: [255, 244, 229] },
   { name: "Frio",     rgb: [200, 220, 255] },
-  { name: "Âmbar",    rgb: [255, 160,  60] },
+  { name: "?mbar",    rgb: [255, 160,  60] },
   { name: "Vermelho", rgb: [255,  70,  70] },
   { name: "Rosa",     rgb: [255, 105, 180] },
   { name: "Roxo",     rgb: [170, 100, 255] },
@@ -930,7 +938,7 @@ function openLightModal(id) {
     <div class="modal__head">
       <div>
         <h2 class="modal__title">${friendly(id, id)}</h2>
-        <div class="modal__sub">${formatState(id)} · ${id}</div>
+        <div class="modal__sub">${formatState(id)}  ${id}</div>
       </div>
       <button class="modal__close" data-modal-close aria-label="Fechar">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
@@ -971,9 +979,9 @@ function openMediaModal(id) {
       <div class="a">${artist}</div>
     </div>
     <div class="mp-controls">
-      <button class="mp-btn" data-mp-prev="${id}" title="Anterior">⏮</button>
-      <button class="mp-btn mp-pp" data-mp-pp="${id}" title="Play/Pause">${playing ? "❚❚" : "▶"}</button>
-      <button class="mp-btn" data-mp-next="${id}" title="Próximo">⏭</button>
+      <button class="mp-btn" data-mp-prev="${id}" title="Anterior"></button>
+      <button class="mp-btn mp-pp" data-mp-pp="${id}" title="Play/Pause">${playing ? "" : ""}</button>
+      <button class="mp-btn" data-mp-next="${id}" title="Prximo"></button>
     </div>
     <div class="mp-vol">
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9v6h4l5 4V5l-5 4H5z"/></svg>
@@ -1047,7 +1055,7 @@ function bindModalInteractions() {
     b.onclick = async () => {
       const id = b.dataset.mpPp;
       await mediaPlayPause(id);
-      b.textContent = entityState(id) === "playing" ? "❚❚" : "▶";
+      b.textContent = entityState(id) === "playing" ? "" : "";
     };
   });
   sheetEl.querySelectorAll("[data-mp-prev]").forEach((b) => {
@@ -1081,7 +1089,7 @@ function bindModalInteractions() {
    Abrir popups via click no card (sem afetar o switch)
    ========================================================= */
 document.addEventListener("click", (e) => {
-  // ignora clique no switch (já tratado por data-toggle)
+  // ignora clique no switch (j tratado por data-toggle)
   if (e.target.closest("[data-toggle]")) return;
   if (e.target.closest("[data-modal-close]")) return;
   if (e.target.closest(".modal__sheet")) return;
@@ -1091,7 +1099,7 @@ document.addEventListener("click", (e) => {
   const id = card.dataset.entity;
   if (!id) return;
 
-  // botões dentro do card que não devem abrir popup
+  // botes dentro do card que no devem abrir popup
   if (e.target.closest("[data-script], [data-media-prev], [data-media-playpause], [data-refresh-camera], [data-route-go], [data-home-camera]")) return;
 
   const domain = id.split(".")[0];
@@ -1112,7 +1120,7 @@ function haptic(ms = 10) {
 const SCENES = [
   {
     id: "goodnight", name: "Boa noite",
-    sub: "Apaga tudo, ativa ruído branco e modo noturno",
+    sub: "Apaga tudo, ativa ru?do branco e modo noturno",
     icon: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
     run: async () => {
       const allLights = Object.values(ENTITY_MAP.groups);
@@ -1242,7 +1250,7 @@ function openHouseModeModal() {
 document.getElementById("houseBtn")?.addEventListener("click", () => { haptic(8); openHouseModeModal(); });
 
 /* =========================================================
-   CONFIRMAÇÍO (alarme / porta / sair)
+   CONFIRMAO (alarme / porta / sair)
    ========================================================= */
 function openConfirm(title, message, onConfirm) {
   openModal(`
@@ -1280,7 +1288,7 @@ document.addEventListener("click", (e) => {
 }, true);
 
 /* =========================================================
-   NOTIFICAÇÕES (logbook)
+   NOTIFICAES (logbook)
    ========================================================= */
 const NOTIF_ENTITIES = [
   ENTITY_MAP.security.door,
@@ -1310,14 +1318,14 @@ async function openNotifModal() {
   openModal(`
     <div class="modal__head">
       <div>
-        <h2 class="modal__title">Notificações</h2>
-        <div class="modal__sub">Últimas 24h</div>
+        <h2 class="modal__title">Notificaes</h2>
+        <div class="modal__sub">ltimas 24h</div>
       </div>
       <button class="modal__close" data-modal-close aria-label="Fechar">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
       </button>
     </div>
-    <div class="notif-list" id="notifList"><div class="notif-empty">Carregando…</div></div>
+    <div class="notif-list" id="notifList"><div class="notif-empty">Carregando</div></div>
   `);
   const list = sheetEl.querySelector("#notifList");
   const items = await fetchNotifications();
@@ -1364,7 +1372,7 @@ function updateFab() {
 }
 
 /* =========================================================
-   SPARKLINE no Clima — history API
+   SPARKLINE no Clima  history API
    ========================================================= */
 async function fetchHistory(entity_id, hours = 12) {
   try {
@@ -1399,7 +1407,7 @@ async function injectClimateSparklines() {
   const cards = view.querySelectorAll(".stat-card");
   if (!cards.length) return;
   const [tempVals, humVals] = await Promise.all([
-    fetchHistory(ENTITY_MAP.climate.temp, 12),
+    fetchHistory(ENTITY_MAP.climate.estherTemp, 12),
     fetchHistory(ENTITY_MAP.climate.humidity, 12),
   ]);
   if (humVals.length && cards[0]) cards[0].insertAdjacentHTML("beforeend", sparklineSvg(humVals));
@@ -1421,8 +1429,8 @@ function paintScreensaver() {
   const now = new Date();
   if (ssTime) ssTime.textContent = now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
   if (ssDate) ssDate.textContent = now.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
-  if (ssTemp) ssTemp.textContent = `${num(ENTITY_MAP.climate.temp, 0).toFixed(0)}°`;
-  if (ssBaby) ssBaby.textContent = isOn(ENTITY_MAP.baby.occupied) ? "Berço ocupado" : "Berço livre";
+  if (ssTemp) ssTemp.textContent = `${houseTemp(0).toFixed(0)}`;
+  if (ssBaby) ssBaby.textContent = isOn(ENTITY_MAP.baby.occupied) ? "Ber\u00E7o ocupado" : "Ber\u00E7o livre";
 }
 let ssPaintTimer = null;
 function showScreensaver() {
@@ -1450,7 +1458,7 @@ ssEl?.addEventListener("click", () => { hideScreensaver(); resetSsTimer(); });
 );
 resetSsTimer();
 
-// Auto-night entre 22h e 06h (apenas se usuário não trocou manualmente nos últimos 30min)
+// Auto-night entre 22h e 06h (apenas se usu\u00E1rio no trocou manualmente nos ltimos 30min)
 let lastManualThemeChange = 0;
 document.getElementById("themeBtn")?.addEventListener("click", () => { lastManualThemeChange = Date.now(); });
 function autoTheme() {
@@ -1462,7 +1470,7 @@ function autoTheme() {
 setInterval(autoTheme, 5 * 60 * 1000);
 
 /* =========================================================
-   PERFORMANCE — pause WS quando aba oculta + double-buffer câmera
+   PERFORMANCE  pause WS quando aba oculta + double-buffer c\u00E2mera
    ========================================================= */
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) {
@@ -1474,7 +1482,7 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 
-// Double buffer da câmera: substitui refreshCameraFeed por versão sem flicker
+// Double buffer da c\u00E2mera: substitui refreshCameraFeed por verso sem flicker
 const _origRefresh = refreshCameraFeed;
 refreshCameraFeed = async function (img) {
   if (!img?.dataset?.cameraFeed) return;
@@ -1489,7 +1497,7 @@ refreshCameraFeed = async function (img) {
 };
 
 /* =========================================================
-   POLIMENTO VISUAL — bolinha de cor RGB nos cards de luz
+   POLIMENTO VISUAL  bolinha de cor RGB nos cards de luz
    ========================================================= */
 const _origPatchEntityUI = patchEntityUI;
 patchEntityUI = function (id) {
@@ -1527,7 +1535,7 @@ function applySavedOrder() {
     map.set(key, el);
   });
   order.forEach((key) => { const el = map.get(key); if (el) grid.appendChild(el); });
-  // os que sobraram já estão no fim
+  // os que sobraram j esto no fim
 }
 function saveOrder() {
   const grid = view.querySelector(".home-grid");
@@ -1569,10 +1577,10 @@ function disableEdit() {
   Array.from(grid.children).forEach((el) => { el.draggable = false; });
 }
 
-// banner para sair do modo edição
+// banner para sair do modo edio
 const editBanner = document.createElement("div");
 editBanner.className = "edit-banner";
-editBanner.textContent = "Concluir edição";
+editBanner.textContent = "Concluir edio";
 editBanner.onclick = disableEdit;
 document.body.appendChild(editBanner);
 
@@ -1600,7 +1608,7 @@ document.addEventListener("click", (e) => {
 }, true);
 
 /* =========================================================
-   HOOKS — render() extras + haptics nos toggles
+   HOOKS  render() extras + haptics nos toggles
    ========================================================= */
 const _origRender = render;
 render = function () {
@@ -1636,7 +1644,7 @@ connectWebSocket = function () {
   };
 };
 
-/* primeiro paint de FAB e auto-tema após bootstrap */
+/* primeiro paint de FAB e auto-tema aps bootstrap */
 setTimeout(() => { updateFab(); autoTheme(); }, 800);
 
 /* =========================================================
@@ -1685,7 +1693,7 @@ function openGroupModal(groupId) {
 /* =========================================================
    HOUSE MODES + SECURITY SWIPE + FULLSCREEN CAMERA
    ========================================================= */
-// Bind hooks após cada render
+// Bind hooks aps cada render
 const _origBindInteractions = bindInteractions;
 bindInteractions = function () {
   _origBindInteractions();
@@ -1704,7 +1712,7 @@ bindInteractions = function () {
     };
   });
 
-  // Tabs câmera de segurança
+  // Tabs c\u00E2mera de segurana
   document.querySelectorAll("[data-security-camera]").forEach((btn) => {
     btn.onclick = (e) => {
       e.stopPropagation();
@@ -1722,7 +1730,7 @@ bindInteractions = function () {
     switchHomeCamera(ids[nextIdx]);
   });
 
-  // Swipe no hero de segurança
+  // Swipe no hero de segurana
   const secHero = document.querySelector("[data-security-hero]");
   if (secHero && state.route === "security") {
     attachSwipe(secHero, (dir) => {
@@ -1737,7 +1745,7 @@ bindInteractions = function () {
     stopSecurityRotate();
   }
 
-  // Click em hero (que NÍO seja num botão interno) -> fullscreen
+  // Click em hero (que NO seja num boto interno) -> fullscreen
   document.querySelectorAll("[data-camera-fullscreen]").forEach((el) => {
     el.addEventListener("click", (e) => {
       if (e.target.closest("button, [data-toggle], [data-home-camera], [data-security-camera]")) return;
@@ -1802,7 +1810,7 @@ function restartSecurityRotate() {
 }
 
 /* =========================================================
-   CÂMERA FULLSCREEN
+   CMERA FULLSCREEN
    ========================================================= */
 const camFs = document.createElement("div");
 camFs.className = "camfs";
@@ -1811,18 +1819,18 @@ camFs.innerHTML = `
     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
   </button>
   <div class="camfs__bar"></div>
-  <img class="camfs__img" alt="Câmera fullscreen" />
-  <button class="talk-back camfs__talk" id="camFsTalk" title="Falar nesta câmera" aria-label="Talk-back">
+  <img class="camfs__img" alt="C\u00E2mera fullscreen" />
+  <button class="talk-back camfs__talk" id="camFsTalk" title="Falar nesta c\u00E2mera" aria-label="Talk-back">
     <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 11a7 7 0 0 1-14 0"/><path d="M12 18v3"/></svg>
   </button>
-  <div class="camfs__hint">Arraste para trocar · toque para fechar · segure 🎤 para falar</div>
+  <div class="camfs__hint">Arraste para trocar · toque para fechar · segure para falar</div>
 `;
 document.body.appendChild(camFs);
 const camFsImg = camFs.querySelector(".camfs__img");
 const camFsBar = camFs.querySelector(".camfs__bar");
 let camFsTimer = null;
 let camFsCurrent = null;
-const ALL_CAMS = [...HOME_CAMERAS, { id: ENTITY_MAP.baby.camera, label: "Berço" }];
+const ALL_CAMS = [...HOME_CAMERAS, { id: ENTITY_MAP.baby.camera, label: "Bero" }];
 
 function paintCamFsBar() {
   camFsBar.innerHTML = ALL_CAMS.map((c) => `<button data-camfs="${c.id}" class="${c.id === camFsCurrent ? "is-active" : ""}">${c.label}</button>`).join("");
@@ -1875,16 +1883,16 @@ attachSwipe(camFs, (dir) => {
   switchCamFs(next, dir);
 });
 
-/* Talk-back universal — push-to-talk em qualquer câmera (fullscreen) */
+/* Talk-back universal  push-to-talk em qualquer c\u00E2mera (fullscreen) */
 let _camFsTalkStream = null;
 async function _camFsStartTalk() {
   if (_camFsTalkStream) return;
   try {
-    _camFsTalkStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    _camFsTalkStream = await navigator.mediaDevices.getUserMedia({ aá\u00E1udio: true });
     document.getElementById("camFsTalk")?.classList.add("is-talking");
-    if (typeof toast === "function") toast(`🎤 Falando em ${camFsCurrent || "câmera"}…`, "info", 2000);
+    if (typeof toast === "function") toast(` Falando em ${camFsCurrent || "c\u00E2mera"}`, "info", 2000);
     if (navigator.vibrate) navigator.vibrate(15);
-  } catch { if (typeof toast === "function") toast("Microfone não autorizado", "err"); }
+  } catch { if (typeof toast === "function") toast("Microfone no autorizado", "err"); }
 }
 function _camFsStopTalk() {
   if (!_camFsTalkStream) return;
@@ -1904,7 +1912,7 @@ function _camFsStopTalk() {
 })();
 
 /* =========================================================
-   SCREENSAVER — bloquear na página baby
+   SCREENSAVER  bloquear na pgina baby
    ========================================================= */
 const _origReset = resetSsTimer;
 resetSsTimer = function () {
@@ -1926,17 +1934,17 @@ go = function (route) {
 };
 
 /* =========================================================
-   SIDEBAR — avatar com iniciais coloridas + engrenagem (settings)
+   SIDEBAR  avatar com iniciais coloridas + engrenagem (settings)
    ========================================================= */
 (function setupSidebar() {
   const avatar = document.querySelector(".avatar");
   if (avatar) {
     const photo = localStorage.getItem("auroraUserPhoto");
     if (photo) {
-      avatar.innerHTML = `<img src="${photo}" alt="Usuário" />`;
+      avatar.innerHTML = `<img src="${photo}" alt="Usurio" />`;
     }
     avatar.style.cursor = "pointer";
-    avatar.title = "Trocar foto do usuário";
+    avatar.title = "Trocar foto do usu\u00E1rio";
     avatar.addEventListener("click", () => {
       const input = document.createElement("input");
       input.type = "file"; input.accept = "image/*";
@@ -1945,7 +1953,7 @@ go = function (route) {
         const r = new FileReader();
         r.onload = () => {
           localStorage.setItem("auroraUserPhoto", r.result);
-          avatar.innerHTML = `<img src="${r.result}" alt="Usuário" />`;
+          avatar.innerHTML = `<img src="${r.result}" alt="Usurio" />`;
         };
         r.readAsDataURL(f);
       };
@@ -1964,7 +1972,7 @@ function openSettingsModal() {
     <div class="modal__head">
       <div>
         <h2 class="modal__title">Ajustes</h2>
-        <div class="modal__sub">Preferências da dashboard</div>
+        <div class="modal__sub">Preferncias da dashboard</div>
       </div>
       <button class="modal__close" data-modal-close aria-label="Fechar">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
@@ -1987,7 +1995,7 @@ function openSettingsModal() {
       </div>
     </div>
     <div class="modal__section">
-      <div class="modal__label">Foto do usuário</div>
+      <div class="modal__label">Foto do usu\u00E1rio</div>
       <div style="display:flex;gap:10px;align-items:center;">
         ${photo ? `<img src="${photo}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;" />` : `<div class="avatar" style="position:relative;">W</div>`}
         <button class="btn" id="changePhotoBtn">Trocar foto</button>
@@ -2028,13 +2036,13 @@ function openSettingsModal() {
   sheetEl.querySelector("#reloadDashBtn")?.addEventListener("click", () => location.reload());
 }
 
-/* Re-exclui o card popup da entidade alarme da segurança (quando há confirm) */
+/* Re-exclui o card popup da entidade alarme da segurana (quando h confirm) */
 
 /* =========================================================
-   v2 — IMPROVEMENTS PACK
+   v2  IMPROVEMENTS PACK
    ========================================================= */
 
-/* ---------- 4 · Toasts (feedback) ---------- */
+/* ---------- 4  Toasts (feedback) ---------- */
 const toastWrap = document.getElementById("toastWrap");
 function toast(msg, kind = "info", ms = 2800) {
   if (!toastWrap) return;
@@ -2056,7 +2064,7 @@ callService = async function (...args) {
   }
 };
 
-/* ---------- 1 · Dot de modo da casa no botão ---------- */
+/* ---------- 1  Dot de modo da casa no boto ---------- */
 const HOUSE_MODE_COLORS = { Dia: "#d5ff7f", Noite: "#b39dff", Fora: "#7dd3fc", Cinema: "#ff8a9b" };
 function paintHouseDot() {
   const btn = document.getElementById("houseBtn");
@@ -2067,17 +2075,17 @@ function paintHouseDot() {
   const color = HOUSE_MODE_COLORS[cur] || "#888";
   dot.style.background = color;
   dot.style.color = color;
-  btn.title = `Modo: ${cur || "—"}`;
+  btn.title = `Modo: ${cur || ""}`;
 }
 
-/* ---------- 13 · Reconexão WS com backoff + chip ---------- */
+/* ---------- 13  Reconexo WS com backoff + chip ---------- */
 const connChip = document.getElementById("connChip");
 const connTxt = document.getElementById("connTxt");
 function setConn(status) {
   if (!connChip) return;
   connChip.classList.remove("is-warn", "is-err");
   if (status === "ok") { connTxt.textContent = "ao vivo"; }
-  else if (status === "warn") { connChip.classList.add("is-warn"); connTxt.textContent = "reconectando…"; }
+  else if (status === "warn") { connChip.classList.add("is-warn"); connTxt.textContent = "reconectando"; }
   else { connChip.classList.add("is-err"); connTxt.textContent = "offline"; }
 }
 let wsRetry = 0;
@@ -2097,7 +2105,7 @@ connectWebSocket = function () {
     try {
       const m = JSON.parse(event.data);
       if (m.type === "auth_ok") { setConn("ok"); wsRetry = 0; }
-      if (m.type === "auth_invalid") { setConn("err"); toast("Token inválido", "err"); }
+      if (m.type === "auth_invalid") { setConn("err"); toast("Token invlido", "err"); }
     } catch {}
   };
   const _close = ws.onclose;
@@ -2110,19 +2118,19 @@ connectWebSocket = function () {
   ws.onerror = () => setConn("warn");
 };
 
-/* ---------- 17 · Transição entre rotas ---------- */
+/* ---------- 17  Transio entre rotas ---------- */
 const _origGoV2 = go;
 go = function (route) {
   view.classList.remove("is-routing");
-  // forçar reflow
+  // forar reflow
   void view.offsetWidth;
   _origGoV2(route);
   view.classList.add("is-routing");
-  // dot no botão de modo após qualquer render
+  // dot no boto de modo aps qualquer render
   setTimeout(paintHouseDot, 0);
 };
 
-/* ---------- 19 · Pulse de mudança ---------- */
+/* ---------- 19  Pulse de mudana ---------- */
 const _patch2 = patchEntityUI;
 const lastEntityState = {};
 patchEntityUI = function (id) {
@@ -2142,7 +2150,7 @@ patchEntityUI = function (id) {
   if (id === ENTITY_MAP.houseMode) paintHouseDot();
 };
 
-/* ---------- 2 · Slide to confirm (substitui openConfirm) ---------- */
+/* ---------- 2  Slide to confirm (substitui openConfirm) ---------- */
 const _origOpenConfirm = openConfirm;
 openConfirm = function (title, message, onConfirm) {
   openModal(`
@@ -2157,7 +2165,7 @@ openConfirm = function (title, message, onConfirm) {
     </div>
     <div class="slide-confirm" id="slideConfirm">
       <div class="slide-confirm__fill" id="scFill"></div>
-      <div class="slide-confirm__track">Arraste para confirmar →</div>
+      <div class="slide-confirm__track">Arraste para confirmar </div>
       <div class="slide-confirm__handle" id="scHandle">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
       </div>
@@ -2197,7 +2205,7 @@ openConfirm = function (title, message, onConfirm) {
   window.addEventListener("touchend", onUp);
 };
 
-/* ---------- 6 · Calendário / Rotinas ---------- */
+/* ---------- 6  Calendrio / Rotinas ---------- */
 async function fetchCalendars() {
   try {
     const cals = await haFetch("/api/calendars");
@@ -2213,10 +2221,10 @@ async function fetchCalendars() {
 async function openCalendarModal() {
   openModal(`
     <div class="modal__head">
-      <div><h2 class="modal__title">Próximos eventos</h2><div class="modal__sub">7 dias</div></div>
+      <div><h2 class="modal__title">Prximos eventos</h2><div class="modal__sub">7 dias</div></div>
       <button class="modal__close" data-modal-close aria-label="Fechar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     </div>
-    <div class="notif-list" id="calList"><div class="notif-empty">Carregando…</div></div>
+    <div class="notif-list" id="calList"><div class="notif-empty">Carregando</div></div>
   `);
   const list = sheetEl.querySelector("#calList");
   const evts = await fetchCalendars();
@@ -2229,7 +2237,7 @@ async function openCalendarModal() {
   }).join("");
 }
 
-/* ---------- 7 · Lista de compras (todo) ---------- */
+/* ---------- 7  Lista de compras (todo) ---------- */
 async function fetchTodos() {
   try {
     const states = await haFetch("/api/states");
@@ -2242,7 +2250,7 @@ async function openTodoModal() {
       <div><h2 class="modal__title">Listas</h2><div class="modal__sub">Compras e tarefas</div></div>
       <button class="modal__close" data-modal-close aria-label="Fechar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     </div>
-    <div id="todoBody"><div class="notif-empty">Carregando…</div></div>
+    <div id="todoBody"><div class="notif-empty">Carregando</div></div>
   `);
   const body = sheetEl.querySelector("#todoBody");
   const lists = await fetchTodos();
@@ -2251,7 +2259,7 @@ async function openTodoModal() {
     <div class="modal__section">
       <div class="modal__label">${l.attributes?.friendly_name || l.entity_id}</div>
       <div style="display:flex;gap:8px;margin-bottom:8px;">
-        <input class="todo-input" data-list="${l.entity_id}" placeholder="Adicionar item…" style="flex:1;padding:10px 14px;border-radius:12px;border:1px solid var(--glass-stroke);background:var(--glass-2);color:inherit;outline:none;" />
+        <input class="todo-input" data-list="${l.entity_id}" placeholder="Adicionar item" style="flex:1;padding:10px 14px;border-radius:12px;border:1px solid var(--glass-stroke);background:var(--glass-2);color:inherit;outline:none;" />
         <button class="btn btn--lime" data-add="${l.entity_id}">+</button>
       </div>
       <div class="muted" style="font-size:13px;">${l.state} pendentes</div>
@@ -2270,14 +2278,14 @@ async function openTodoModal() {
   });
 }
 
-/* ---------- 8 · Forecast popup ---------- */
+/* ---------- 8  Forecast popup ---------- */
 async function openForecastModal() {
   openModal(`
     <div class="modal__head">
-      <div><h2 class="modal__title">Previsão</h2><div class="modal__sub">7 dias · Taubaté</div></div>
+      <div><h2 class="modal__title">Previso</h2><div class="modal__sub">7 dias  Taubat</div></div>
       <button class="modal__close" data-modal-close aria-label="Fechar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     </div>
-    <div id="fcBody"><div class="notif-empty">Carregando…</div></div>
+    <div id="fcBody"><div class="notif-empty">Carregando</div></div>
   `);
   let forecast = [];
   try {
@@ -2292,17 +2300,17 @@ async function openForecastModal() {
     forecast = ent?.attributes?.forecast || [];
   }
   const body = sheetEl.querySelector("#fcBody");
-  if (!forecast.length) { body.innerHTML = `<div class="notif-empty">Sem dados de previsão</div>`; return; }
+  if (!forecast.length) { body.innerHTML = `<div class="notif-empty">Sem dados de previso</div>`; return; }
   body.innerHTML = `<div class="fc-grid">${forecast.slice(0, 7).map((f) => {
     const d = new Date(f.datetime || f.date || Date.now());
     const wd = d.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", "");
-    return `<div class="fc-day"><div class="d">${wd}</div><div class="t">${Math.round(f.temperature ?? 0)}°</div><div class="r">${f.precipitation ? Math.round(f.precipitation) + "mm" : "—"}</div></div>`;
+    return `<div class="fc-day"><div class="d">${wd}</div><div class="t">${Math.round(f.temperature ?? 0)}</div><div class="r">${f.precipitation ? Math.round(f.precipitation) + "mm" : ""}</div></div>`;
   }).join("")}</div>`;
 }
 document.querySelector(".weather-chip")?.addEventListener("click", openForecastModal);
 document.querySelector(".weather-chip")?.style.setProperty("cursor", "pointer");
 
-/* ---------- 9 · Intercom (TTS) ---------- */
+/* ---------- 9  Intercom (TTS) ---------- */
 async function openIntercomModal() {
   const speakers = ["media_player.echo_pop_de_vinicius", "media_player.echo_quarto"];
   openModal(`
@@ -2320,7 +2328,7 @@ async function openIntercomModal() {
       </div>
     </div>
     <div style="display:flex;gap:10px;">
-      ${["Jantar pronto!","Estou indo!","Esther dormindo, silêncio."].map((q) => `<button class="btn" data-quick="${q}">${q}</button>`).join("")}
+      ${["Jantar pronto!","Estou indo!","Esther dormindo, silncio."].map((q) => `<button class="btn" data-quick="${q}">${q}</button>`).join("")}
     </div>
     <div style="margin-top:14px;"><button class="btn btn--lime" id="ttsSend">Enviar</button></div>
   `);
@@ -2340,19 +2348,24 @@ async function openIntercomModal() {
   };
 }
 
-/* ---------- 10 · Sparkline sono baby ---------- */
-async function injectBabySparkline() {
+/* ---------- 10  Sparkline sono baby ---------- */
+async function injectBabySparkline() { return;
+ return;
+ return;
+ return;
+ return;
+
   if (state.route !== "baby") return;
   const card = view.querySelector(".baby-status");
   if (!card || card.querySelector(".baby-sleep-spark")) return;
   const vals = await fetchHistory(ENTITY_MAP.baby.occupied, 24 * 7).catch(() => []);
-  // converter on/off em 1/0 — fetchHistory só retorna numéricos, então busco bruto
+  // converter on/off em 1/0  fetchHistory s retorna numricos, ento busco bruto
   try {
     const start = new Date(Date.now() - 7 * 86400000).toISOString();
     const data = await haFetch(`/api/history/period/${encodeURIComponent(start)}?filter_entity_id=${ENTITY_MAP.baby.occupied}&minimal_response=true`);
     const pts = data?.[0]?.map((p) => p.state === "on" ? 1 : 0) || [];
     if (!pts.length) return;
-    // agrupar por dia (média)
+    // agrupar por dia (mdia)
     const days = 7;
     const bucketSize = Math.max(1, Math.floor(pts.length / days));
     const buckets = [];
@@ -2365,14 +2378,14 @@ async function injectBabySparkline() {
     const line = buckets.map((v, i) => `${i === 0 ? "M" : "L"}${(i * step).toFixed(1)} ${(h - v * h).toFixed(1)}`).join(" ");
     const area = `${line} L${w} ${h} L0 ${h} Z`;
     card.insertAdjacentHTML("beforeend",
-      `<div style="font-size:11px;color:var(--c-ink-mute);margin-top:10px;">Ocupação 7 dias</div>
+      `<div style="font-size:11px;color:var(--c-ink-mute);margin-top:10px;">Ocupa\u00E7\u00E3o 7 dias</div>
        <svg class="baby-sleep-spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
          <path class="area" d="${area}"/><path d="${line}"/>
        </svg>`);
   } catch {}
 }
 
-/* ---------- 11 · Timer mamada / troca ---------- */
+/* ---------- 11  Timer mamada / troca ---------- */
 const BABY_LOG_KEY = "auroraBabyLog";
 function babyLogGet() { try { return JSON.parse(localStorage.getItem(BABY_LOG_KEY) || "{}"); } catch { return {}; } }
 function babyLogSet(k) {
@@ -2383,12 +2396,17 @@ function babyLogSet(k) {
   if (map[k]) callService("input_datetime", "set_datetime", { timestamp: Math.floor(Date.now() / 1000) }, { entity_id: map[k] }).catch(() => {});
 }
 function timeAgo(ts) {
-  if (!ts) return "—";
+  if (!ts) return "";
   const min = Math.floor((Date.now() - ts) / 60000);
   if (min < 60) return `${min}min`;
   const h = Math.floor(min / 60); return `${h}h${min % 60 ? ` ${min % 60}m` : ""}`;
 }
-function injectBabyTimers() {
+function injectBabyTimers() { return;
+ return;
+ return;
+ return;
+ return;
+
   if (state.route !== "baby") return;
   const ctrls = view.querySelector(".baby-ctrls");
   if (!ctrls || ctrls.querySelector(".baby-timer-row")) return;
@@ -2411,7 +2429,7 @@ function injectBabyTimers() {
   });
 }
 
-/* ---------- 12 · Monitor noturno automático ---------- */
+/* ---------- 12  Monitor noturno automtico ---------- */
 const nm = document.getElementById("nightMonitor");
 const nmTime = document.getElementById("nmTime");
 const nmStatus = document.getElementById("nmStatus");
@@ -2424,8 +2442,8 @@ function paintNightMonitor() {
   nmTime.textContent = now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
   const occ = isOn(ENTITY_MAP.baby.occupied);
   nm.classList.toggle("is-active", occ);
-  nmStatus.textContent = occ ? "Berço ocupado" : "Berço livre";
-  nmTemp.textContent = `${num(ENTITY_MAP.baby.temp, 0).toFixed(1)}°`;
+  nmStatus.textContent = occ ? "Ber\u00E7o ocupado" : "Ber\u00E7o livre";
+  nmTemp.textContent = `${num(ENTITY_MAP.baby.temp, 0).toFixed(1)}`;
 }
 async function refreshNmCam() {
   try { const u = await fetchCameraFrame(ENTITY_MAP.baby.camera); if (u) nmCamImg.src = u; } catch {}
@@ -2443,7 +2461,7 @@ function closeNightMonitor() {
   nmTimer = nmCamTimer = null;
 }
 document.getElementById("nmClose")?.addEventListener("click", closeNightMonitor);
-// auto: entre 20h e 6h, na rota baby, sem interação por 60s -> ativa
+// auto: entre 20h e 6h, na rota baby, sem interao por 60s -> ativa
 let nmIdle = null;
 function resetNmIdle() {
   clearTimeout(nmIdle);
@@ -2454,7 +2472,7 @@ function resetNmIdle() {
 }
 ["pointerdown","keydown","wheel"].forEach((ev) => document.addEventListener(ev, resetNmIdle));
 
-/* ---------- 14 · Cache otimista (já parcial) — toast em falha extra ---------- */
+/* ---------- 14  Cache otimista (j parcial)  toast em falha extra ---------- */
 const _origToggleEntityV2 = toggleEntity;
 toggleEntity = async function (id) {
   const wasOn = isOn(id);
@@ -2466,7 +2484,7 @@ toggleEntity = async function (id) {
   }
 };
 
-/* ---------- 15 · Snapshot offline ---------- */
+/* ---------- 15  Snapshot offline ---------- */
 const SNAP_KEY = "auroraSnap";
 function saveSnapshot() {
   try { localStorage.setItem(SNAP_KEY, JSON.stringify({ t: Date.now(), e: state.entities })); } catch {}
@@ -2484,7 +2502,7 @@ loadStates = async function () {
   }
 };
 
-/* ---------- 16 · Logs de auditoria ---------- */
+/* ---------- 16  Logs de auditoria ---------- */
 const AUDIT_KEY = "auroraAudit";
 function auditLog(action, target, ok = true) {
   try {
@@ -2497,24 +2515,24 @@ const _origCallServiceV3 = callService;
 callService = async function (domain, service, data, target) {
   try {
     const r = await _origCallServiceV3(domain, service, data, target);
-    auditLog(`${domain}.${service}`, target?.entity_id || data?.entity_id || "—", true);
+    auditLog(`${domain}.${service}`, target?.entity_id || data?.entity_id || "", true);
     return r;
-  } catch (e) { auditLog(`${domain}.${service}`, target?.entity_id || data?.entity_id || "—", false); throw e; }
+  } catch (e) { auditLog(`${domain}.${service}`, target?.entity_id || data?.entity_id || "", false); throw e; }
 };
 function openAuditModal() {
   const arr = (() => { try { return JSON.parse(localStorage.getItem(AUDIT_KEY) || "[]"); } catch { return []; } })();
   openModal(`
     <div class="modal__head">
-      <div><h2 class="modal__title">Auditoria</h2><div class="modal__sub">Últimas ações da dashboard</div></div>
+      <div><h2 class="modal__title">Auditoria</h2><div class="modal__sub">ltimas aes da dashboard</div></div>
       <button class="modal__close" data-modal-close aria-label="Fechar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     </div>
     <div class="notif-list">
-      ${arr.length ? arr.map((it) => `<div class="notif-item"><div class="ic"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div class="body"><div class="t">${it.action} ${it.ok ? "" : "❌"}</div><div class="m">${it.target}</div><div class="ts">${new Date(it.t).toLocaleString("pt-BR")}</div></div></div>`).join("") : `<div class="notif-empty">Sem registros</div>`}
+      ${arr.length ? arr.map((it) => `<div class="notif-item"><div class="ic"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div class="body"><div class="t">${it.action} ${it.ok ? "" : ""}</div><div class="m">${it.target}</div><div class="ts">${new Date(it.t).toLocaleString("pt-BR")}</div></div></div>`).join("") : `<div class="notif-empty">Sem registros</div>`}
     </div>
   `);
 }
 
-/* ---------- 18 · Skeleton no boot ---------- */
+/* ---------- 18  Skeleton no boot ---------- */
 if (!state.connected) {
   view.innerHTML = `<div class="home-grid">${Array.from({length:6}).map(() => `<div class="card skeleton" style="height:160px;"></div>`).join("")}</div>`;
 }
@@ -2533,7 +2551,7 @@ const ACCENT_PRESETS = [
   { id: "cyan",    name: "Ciano",    accent: "#7dd3fc", soft: "#38bdf8", baby: "#ff8a9b" },
   { id: "violet",  name: "Violeta",  accent: "#b39dff", soft: "#8b5cf6", baby: "#ff8a9b" },
   { id: "rose",    name: "Rosa",     accent: "#ff8a9b", soft: "#ff5d77", baby: "#d6ff4d" },
-  { id: "amber",   name: "Âmbar",    accent: "#ffd84a", soft: "#f5b800", baby: "#ff8a9b" },
+  { id: "amber",   name: "?mbar",    accent: "#ffd84a", soft: "#f5b800", baby: "#ff8a9b" },
   { id: "emerald", name: "Esmeralda",accent: "#5ee2a0", soft: "#2dc97f", baby: "#ff8a9b" },
   { id: "coral",   name: "Coral",    accent: "#ff7a59", soft: "#ff5a3a", baby: "#7dd3fc" },
 ];
@@ -2563,7 +2581,7 @@ function applyAccent(cfg) {
   } catch {}
 })();
 
-/* ---------- Atalhos extras: gear settings -> adiciona seções (calendário/listas/intercom/auditoria/cores) ---------- */
+/* ---------- Atalhos extras: gear settings -> adiciona sees (calendrio/listas/intercom/auditoria/cores) ---------- */
 const _origOpenSettings = openSettingsModal;
 openSettingsModal = function () {
   _origOpenSettings();
@@ -2587,7 +2605,7 @@ openSettingsModal = function () {
         Personalizado:
         <input type="color" id="accentCustom" value="${currentAccent}" style="width:42px;height:32px;border:none;background:transparent;cursor:pointer;" />
       </label>
-      <button class="btn" id="accentReset">Restaurar padrão</button>
+      <button class="btn" id="accentReset">Restaurar padro</button>
     </div>`;
   sheetEl.appendChild(colorSec);
   colorSec.querySelectorAll("[data-accent]").forEach(b => {
@@ -2614,7 +2632,7 @@ openSettingsModal = function () {
   extra.innerHTML = `
     <div class="modal__label">Atalhos</div>
     <div style="display:flex;flex-wrap:wrap;gap:8px;">
-      <button class="btn" id="openCalBtn">Calendário</button>
+      <button class="btn" id="openCalBtn">Calendrio</button>
       <button class="btn" id="openTodoBtn">Listas</button>
       <button class="btn" id="openTtsBtn">Intercom</button>
       <button class="btn" id="openAuditBtn">Auditoria</button>
@@ -2629,13 +2647,13 @@ openSettingsModal = function () {
 /* ---------- init ---------- */
 setTimeout(() => { paintHouseDot(); setConn(state.connected ? "ok" : "warn"); }, 1000);
 /* =========================================================
-   v3 — EXPANSION PACK
-   Depende de globals já definidos em app.js
+   v3  EXPANSION PACK
+   Depende de globals j definidos em app.js
    ========================================================= */
 /* eslint-disable no-undef */
 
 (function v3() {
-  if (typeof haFetch !== "function") { console.warn("v3: app.js não carregado"); return; }
+  if (typeof haFetch !== "function") { console.warn("v3: app.js no carregado"); return; }
 
   /* ---------- Settings: itens persistentes ---------- */
   const SETTINGS_KEY = "auroraSettingsV3";
@@ -2648,7 +2666,7 @@ setTimeout(() => { paintHouseDot(); setConn(state.connected ? "ok" : "warn"); },
   }
 
   /* =========================================================
-     #23 · URL configurável do HA  (proxy via localStorage)
+     #23  URL configurvel do HA  (proxy via localStorage)
      ========================================================= */
   const HA_URL_KEY = "auroraHaUrl";
   const _origFetch = window.fetch.bind(window);
@@ -2663,7 +2681,7 @@ setTimeout(() => { paintHouseDot(); setConn(state.connected ? "ok" : "warn"); },
   };
 
   /* =========================================================
-     #4 · Energia
+     #4  Energia
      ========================================================= */
   async function getPowerEntities() {
     try {
@@ -2706,8 +2724,8 @@ setTimeout(() => { paintHouseDot(); setConn(state.connected ? "ok" : "warn"); },
   }
 
   /* =========================================================
-     #5 · Cenas/Scripts dinâmicos do HA
-     #6 · Automações com toggle
+     #5  Cenas/Scripts dinmicos do HA
+     #6  Automaes com toggle
      ========================================================= */
   function listByPrefix(prefix) {
     return Object.values(state.entities || {}).filter((e) => e.entity_id.startsWith(prefix));
@@ -2718,13 +2736,13 @@ setTimeout(() => { paintHouseDot(); setConn(state.connected ? "ok" : "warn"); },
     const autos = listByPrefix("automation.");
     openModal(`
       <div class="modal__head">
-        <div><h2 class="modal__title">Automações da casa</h2><div class="modal__sub">Scenes · Scripts · Automations</div></div>
-        <button class="modal__close" data-modal-close aria-label="Fechar">×</button>
+        <div><h2 class="modal__title">Automaes da casa</h2><div class="modal__sub">Scenes  Scripts  Automations</div></div>
+        <button class="modal__close" data-modal-close aria-label="Fechar"></button>
       </div>
-      ${scenes.length ? `<div class="modal__section"><div class="modal__label">Cenas (${scenes.length})</div><div class="ha-list">${scenes.map(s => `<div class="row"><div><div class="nm">${friendly(s.entity_id, s.entity_id)}</div><div class="sb">${s.entity_id}</div></div><button class="btn btn--lime" data-run-scene="${s.entity_id}">▶</button></div>`).join("")}</div></div>` : ""}
-      ${scripts.length ? `<div class="modal__section"><div class="modal__label">Scripts (${scripts.length})</div><div class="ha-list">${scripts.map(s => `<div class="row"><div><div class="nm">${friendly(s.entity_id, s.entity_id)}</div><div class="sb">${s.entity_id}</div></div><button class="btn" data-run-script="${s.entity_id}">▶</button></div>`).join("")}</div></div>` : ""}
-      ${autos.length ? `<div class="modal__section"><div class="modal__label">Automações (${autos.length})</div><div class="ha-list">${autos.map(a => `<div class="row ${a.state==='on'?'is-on':''}" data-auto="${a.entity_id}"><div><div class="nm">${friendly(a.entity_id, a.entity_id)}</div><div class="sb">${a.state==='on'?'Ativa':'Pausada'}</div></div><div class="sw" data-auto-toggle="${a.entity_id}"></div></div>`).join("")}</div></div>` : ""}
-      ${!scenes.length && !scripts.length && !autos.length ? `<div class="notif-empty">Nenhuma cena/script/automação encontrada</div>` : ""}
+      ${scenes.length ? `<div class="modal__section"><div class="modal__label">Cenas (${scenes.length})</div><div class="ha-list">${scenes.map(s => `<div class="row"><div><div class="nm">${friendly(s.entity_id, s.entity_id)}</div><div class="sb">${s.entity_id}</div></div><button class="btn btn--lime" data-run-scene="${s.entity_id}"></button></div>`).join("")}</div></div>` : ""}
+      ${scripts.length ? `<div class="modal__section"><div class="modal__label">Scripts (${scripts.length})</div><div class="ha-list">${scripts.map(s => `<div class="row"><div><div class="nm">${friendly(s.entity_id, s.entity_id)}</div><div class="sb">${s.entity_id}</div></div><button class="btn" data-run-script="${s.entity_id}"></button></div>`).join("")}</div></div>` : ""}
+      ${autos.length ? `<div class="modal__section"><div class="modal__label">Automaes (${autos.length})</div><div class="ha-list">${autos.map(a => `<div class="row ${a.state==='on'?'is-on':''}" data-auto="${a.entity_id}"><div><div class="nm">${friendly(a.entity_id, a.entity_id)}</div><div class="sb">${a.state==='on'?'Ativa':'Pausada'}</div></div><div class="sw" data-auto-toggle="${a.entity_id}"></div></div>`).join("")}</div></div>` : ""}
+      ${!scenes.length && !scripts.length && !autos.length ? `<div class="notif-empty">Nenhuma cena/script/automao encontrada</div>` : ""}
     `);
     sheetEl.querySelectorAll("[data-run-scene]").forEach(b => b.onclick = async () => { try { await callService("scene", "turn_on", {}, { entity_id: b.dataset.runScene }); toast("Cena ativada", "ok"); } catch {} });
     sheetEl.querySelectorAll("[data-run-script]").forEach(b => b.onclick = async () => { try { await callService("script", "turn_on", {}, { entity_id: b.dataset.runScript }); toast("Script executado", "ok"); } catch {} });
@@ -2741,7 +2759,7 @@ setTimeout(() => { paintHouseDot(); setConn(state.connected ? "ok" : "warn"); },
   }
 
   /* =========================================================
-     #9 · Alertas inteligentes de temperatura
+     #9  Alertas inteligentes de temperatura
      ========================================================= */
   const TEMP_ALERT = { min: 20, max: 24 };
   let lastTempAlert = 0;
@@ -2753,7 +2771,7 @@ setTimeout(() => { paintHouseDot(); setConn(state.connected ? "ok" : "warn"); },
     fab.classList.toggle("alert-temp", out);
     if (out && Date.now() - lastTempAlert > 10 * 60 * 1000) {
       lastTempAlert = Date.now();
-      toast(`⚠ Quarto Esther ${t.toFixed(1)}° (fora de ${TEMP_ALERT.min}-${TEMP_ALERT.max}°)`, "err", 5000);
+      toast(` Quarto Esther ${t.toFixed(1)} (fora de ${TEMP_ALERT.min}-${TEMP_ALERT.max})`, "err", 5000);
       bumpNotifDot?.();
     }
   }
@@ -2761,7 +2779,7 @@ setTimeout(() => { paintHouseDot(); setConn(state.connected ? "ok" : "warn"); },
   setTimeout(checkBabyTempAlert, 5000);
 
   /* =========================================================
-     #10 · Talk-back placeholder (microfone via WebRTC)
+     #10  Talk-back placeholder (microfone via WebRTC)
      ========================================================= */
   let talkStream = null;
   async function toggleTalkBack(btn) {
@@ -2771,11 +2789,11 @@ setTimeout(() => { paintHouseDot(); setConn(state.connected ? "ok" : "warn"); },
       return;
     }
     try {
-      talkStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      talkStream = await navigator.mediaDevices.getUserMedia({ aá\u00E1udio: true });
       btn.classList.add("is-talking");
-      toast("Falando no berço… (configure go2rtc para áudio bidirecional)", "info", 4000);
+      toast("Falando no berço (configure go2rtc para áá\u00E1udio bidirecional)", "info", 4000);
     } catch (err) {
-      toast("Microfone não autorizado", "err");
+      toast("Microfone no autorizado", "err");
     }
   }
   function injectTalkBackBtn() {
@@ -2791,11 +2809,11 @@ setTimeout(() => { paintHouseDot(); setConn(state.connected ? "ok" : "warn"); },
   }
 
   /* =========================================================
-     #11 · Timeline berço (eventos recentes)
+     #11  Timeline bero (eventos recentes)
      ========================================================= */
   async function injectBabyTimeline() {
-    // Removido a pedido do usuário: não exibir histórico de eventos abaixo dos controles.
-    // Função mantida como no-op para preservar chamadas existentes.
+    // Removido a pedido do usu\u00E1rio: no exibir hist\u00F3rico de eventos abaixo dos controles.
+    // Fun\u00E7\u00E3o mantida como no-op para preservar chamadas existentes.
     if (state.route !== "baby") return;
     const ctrls = view.querySelector(".baby-ctrls");
     const old = ctrls && ctrls.querySelector(".baby-timeline");
@@ -2803,7 +2821,7 @@ setTimeout(() => { paintHouseDot(); setConn(state.connected ? "ok" : "warn"); },
   }
 
   /* =========================================================
-     #12 · Capa de álbum no media
+     #12  Capa de lbum no media
      ========================================================= */
   function decorateAlbumArt() {
     if (state.route !== "media") return;
@@ -2832,14 +2850,14 @@ setTimeout(() => { paintHouseDot(); setConn(state.connected ? "ok" : "warn"); },
   }
 
   /* =========================================================
-     #14 · Join/Unjoin Echos
+     #14  Join/Unjoin Echos
      ========================================================= */
   async function openJoinEchosModal() {
     const players = Object.values(state.entities).filter(e => e.entity_id.startsWith("media_player.echo"));
     openModal(`
       <div class="modal__head">
-        <div><h2 class="modal__title">Sincronizar Echos</h2><div class="modal__sub">Tocar a mesma música em todos</div></div>
-        <button class="modal__close" data-modal-close aria-label="Fechar">×</button>
+        <div><h2 class="modal__title">Sincronizar Echos</h2><div class="modal__sub">Tocar a mesma msica em todos</div></div>
+        <button class="modal__close" data-modal-close aria-label="Fechar"></button>
       </div>
       <div class="modal__section">
         <div class="modal__label">Mestre (toca primeiro)</div>
@@ -2874,7 +2892,7 @@ setTimeout(() => { paintHouseDot(); setConn(state.connected ? "ok" : "warn"); },
   }
 
   /* =========================================================
-     #16 · Qualidade do ar / CO2
+     #16  Qualidade do ar / CO2
      ========================================================= */
   function injectAqiCard() {
     if (state.route !== "climate") return;
@@ -2896,7 +2914,7 @@ setTimeout(() => { paintHouseDot(); setConn(state.connected ? "ok" : "warn"); },
   }
 
   /* =========================================================
-     #18 · persistent_notification do HA no sino
+     #18  persistent_notification do HA no sino
      ========================================================= */
   const _origFetchNotifications = typeof fetchNotifications === "function" ? fetchNotifications : null;
   if (_origFetchNotifications) {
@@ -2917,7 +2935,7 @@ setTimeout(() => { paintHouseDot(); setConn(state.connected ? "ok" : "warn"); },
   }
 
   /* =========================================================
-     #19 · Snapshot automático ao abrir porta
+     #19  Snapshot automtico ao abrir porta
      ========================================================= */
   const SNAP_GAL_KEY = "auroraDoorSnaps";
   function getSnaps() { try { return JSON.parse(localStorage.getItem(SNAP_GAL_KEY) || "[]"); } catch { return []; } }
@@ -2936,7 +2954,7 @@ setTimeout(() => { paintHouseDot(); setConn(state.connected ? "ok" : "warn"); },
           // Convert blob URL to data URL for persistence
           const blob = await fetch(url).then(r => r.blob());
           const reader = new FileReader();
-          reader.onload = () => { saveSnap(reader.result); toast("📸 Snapshot capturado (porta aberta)", "info"); };
+          reader.onload = () => { saveSnap(reader.result); toast(" Snapshot capturado (porta aberta)", "info"); };
           reader.readAsDataURL(blob);
         }
       } catch {}
@@ -2947,15 +2965,15 @@ setTimeout(() => { paintHouseDot(); setConn(state.connected ? "ok" : "warn"); },
     const arr = getSnaps();
     openModal(`
       <div class="modal__head">
-        <div><h2 class="modal__title">Snapshots da porta</h2><div class="modal__sub">Últimos 10 eventos</div></div>
-        <button class="modal__close" data-modal-close aria-label="Fechar">×</button>
+        <div><h2 class="modal__title">Snapshots da porta</h2><div class="modal__sub">ltimos 10 eventos</div></div>
+        <button class="modal__close" data-modal-close aria-label="Fechar"></button>
       </div>
       ${arr.length ? `<div class="snap-grid">${arr.map(s => `<div><img src="${s.url}" alt="snap"/><div class="muted" style="font-size:11px;text-align:center;margin-top:4px;">${new Date(s.t).toLocaleString("pt-BR")}</div></div>`).join("")}</div>` : `<div class="notif-empty">Sem snapshots</div>`}
     `);
   }
 
   /* =========================================================
-     #20 · Pessoas em casa
+     #20  Pessoas em casa
      ========================================================= */
   function injectPersonsCard() {
     if (state.route !== "home") return;
@@ -2963,13 +2981,13 @@ setTimeout(() => { paintHouseDot(); setConn(state.connected ? "ok" : "warn"); },
     const persons = Object.values(state.entities).filter(e => e.entity_id.startsWith("person."));
     if (!persons.length) return;
     const html = `<article class="card persons-card" style="grid-column: span 3;">
-      <div class="card-head"><span class="card-title">Quem está em casa</span></div>
+      <div class="card-head"><span class="card-title">Quem est em casa</span></div>
       <div class="persons-row" style="margin-top:10px;">
         ${persons.map(p => {
           const home = p.state === "home";
           const pic = p.attributes?.entity_picture;
           const initial = (p.attributes?.friendly_name || p.entity_id.split(".")[1] || "?")[0].toUpperCase();
-          return `<div class="person-pill ${home ? "is-home" : "is-away"}"><div class="av" ${pic?`style="background-image:url('${pic}')"`:""}>${pic?"":initial}</div><span>${friendly(p.entity_id, p.entity_id)} · ${home?"em casa":"fora"}</span></div>`;
+          return `<div class="person-pill ${home ? "is-home" : "is-away"}"><div class="av" ${pic?`style="background-image:url('${pic}')"`:""}>${pic?"":initial}</div><span>${friendly(p.entity_id, p.entity_id)}  ${home?"em casa":"fora"}</span></div>`;
         }).join("")}
       </div>
     </article>`;
@@ -2978,8 +2996,8 @@ setTimeout(() => { paintHouseDot(); setConn(state.connected ? "ok" : "warn"); },
   }
 
   /* =========================================================
-     #21 · Drag-reorder dos cards da home
-     #22 · Esconder cômodos
+     #21  Drag-reorder dos cards da home
+     #22  Esconder cmodos
      ========================================================= */
   const ORDER_KEY = "auroraHomeOrder";
   const HIDDEN_KEY = "auroraHiddenRooms";
@@ -3028,7 +3046,7 @@ setTimeout(() => { paintHouseDot(); setConn(state.connected ? "ok" : "warn"); },
   }
 
   /* =========================================================
-     #24 · Modo quiosque
+     #24  Modo quiosque
      ========================================================= */
   function applyKioskMode() {
     const s = getSettings();
@@ -3037,11 +3055,11 @@ setTimeout(() => { paintHouseDot(); setConn(state.connected ? "ok" : "warn"); },
   applyKioskMode();
 
   /* =========================================================
-     #25 · Command Palette ⌘K
+     #25  Command Palette K
      ========================================================= */
   const cmdkEl = document.createElement("div");
   cmdkEl.className = "cmdk";
-  cmdkEl.innerHTML = `<div class="cmdk__sheet"><input id="cmdkInput" placeholder="Buscar dispositivos, cenas, rotas… (Esc para sair)" autocomplete="off"/><div class="cmdk__list" id="cmdkList"></div></div>`;
+  cmdkEl.innerHTML = `<div class="cmdk__sheet"><input id="cmdkInput" placeholder="Buscar dispositivos, cenas, rotas (Esc para sair)" autocomplete="off"/><div class="cmdk__list" id="cmdkList"></div></div>`;
   document.body.appendChild(cmdkEl);
   const cmdkInput = cmdkEl.querySelector("#cmdkInput");
   const cmdkList = cmdkEl.querySelector("#cmdkList");
@@ -3051,13 +3069,13 @@ setTimeout(() => { paintHouseDot(); setConn(state.connected ? "ok" : "warn"); },
     ROUTES.forEach(r => items.push({ label: `Ir para ${r}`, kbd: r, run: () => go(r) }));
     items.push({ label: "Abrir Cenas", run: () => openScenesModal() });
     items.push({ label: "Modo da Casa", run: () => openHouseModeModal() });
-    items.push({ label: "Notificações", run: () => openNotifModal() });
+    items.push({ label: "Notificaes", run: () => openNotifModal() });
     items.push({ label: "Ajustes", run: () => openSettingsModal() });
-    items.push({ label: "Calendário", run: () => openCalendarModal() });
+    items.push({ label: "Calendrio", run: () => openCalendarModal() });
     items.push({ label: "Listas (Todo)", run: () => openTodoModal() });
     items.push({ label: "Intercom (TTS)", run: () => openIntercomModal() });
     items.push({ label: "Auditoria", run: () => openAuditModal() });
-    items.push({ label: "Auto. HA · Cenas/Scripts/Automações", run: () => openHaAutomationsModal() });
+    items.push({ label: "Auto. HA  Cenas/Scripts/Automaes", run: () => openHaAutomationsModal() });
     items.push({ label: "Sincronizar Echos", run: () => openJoinEchosModal() });
     items.push({ label: "Snapshots da porta", run: () => openDoorSnapsModal() });
     Object.values(state.entities || {}).slice(0, 200).forEach(e => {
@@ -3096,29 +3114,29 @@ setTimeout(() => { paintHouseDot(); setConn(state.connected ? "ok" : "warn"); },
   document.querySelector(".search input")?.addEventListener("focus", openCmdk);
 
   /* =========================================================
-     #27 · PWA install + push
+     #27  PWA install + push
      ========================================================= */
   let deferredPrompt = null;
   window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); deferredPrompt = e; });
   async function tryInstallPWA() {
-    if (!deferredPrompt) { toast("Já instalado ou navegador não suporta", "info"); return; }
+    if (!deferredPrompt) { toast("J instalado ou navegador no suporta", "info"); return; }
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
     toast(outcome === "accepted" ? "Instalado!" : "Cancelado", "info");
     deferredPrompt = null;
   }
   async function tryPushNotif() {
-    if (!("Notification" in window)) { toast("Sem suporte a notificações", "err"); return; }
+    if (!("Notification" in window)) { toast("Sem suporte a notificaes", "err"); return; }
     const perm = await Notification.requestPermission();
-    if (perm === "granted") { new Notification("Casa", { body: "Notificações ativadas ✓" }); toast("Notificações ativadas", "ok"); }
-    else toast("Permissão negada", "err");
+    if (perm === "granted") { new Notification("Casa", { body: "Notificaes ativadas " }); toast("Notificaes ativadas", "ok"); }
+    else toast("Permisso negada", "err");
   }
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("/dashboard/sw.js").catch(() => {});
   }
 
   /* =========================================================
-     Settings v3 — extensão do modal
+     Settings v3  extenso do modal
      ========================================================= */
   const _origSettings = openSettingsModal;
   openSettingsModal = function () {
@@ -3138,14 +3156,14 @@ setTimeout(() => { paintHouseDot(); setConn(state.connected ? "ok" : "warn"); },
     sec.querySelector("#saveHaUrl").onclick = () => {
       const v = sec.querySelector("#haUrlInput").value.trim();
       if (v) localStorage.setItem(HA_URL_KEY, v); else localStorage.removeItem(HA_URL_KEY);
-      toast("URL salva — recarregando", "ok"); setTimeout(() => location.reload(), 600);
+      toast("URL salva  recarregando", "ok"); setTimeout(() => location.reload(), 600);
     };
     sec.querySelector("#clearHaUrl").onclick = () => { localStorage.removeItem(HA_URL_KEY); location.reload(); };
 
     const roomsSec = document.createElement("div");
     roomsSec.className = "modal__section";
     roomsSec.innerHTML = `
-      <div class="modal__label">Cômodos visíveis na Home</div>
+      <div class="modal__label">Cmodos visveis na Home</div>
       <div class="room-toggle-list">
         ${allRooms.map(([k, id]) => `<label><input type="checkbox" data-room="${id}" ${hidden.includes(id)?"":"checked"}/> ${k}</label>`).join("")}
       </div>
@@ -3174,11 +3192,11 @@ setTimeout(() => { paintHouseDot(); setConn(state.connected ? "ok" : "warn"); },
     moreSec.innerHTML = `
       <div class="modal__label">Mais</div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;">
-        <button class="btn" id="openAutosBtn">Cenas/Scripts/Automações</button>
+        <button class="btn" id="openAutosBtn">Cenas/Scripts/Automaes</button>
         <button class="btn" id="openEchosBtn">Sincronizar Echos</button>
         <button class="btn" id="openSnapsBtn">Snapshots porta</button>
         <button class="btn" id="installPwaBtn">Instalar app (PWA)</button>
-        <button class="btn" id="enablePushBtn">Ativar notificações</button>
+        <button class="btn" id="enablePushBtn">Ativar notificaes</button>
       </div>
     `;
     sheetEl.appendChild(moreSec);
@@ -3207,7 +3225,7 @@ setTimeout(() => { paintHouseDot(); setConn(state.connected ? "ok" : "warn"); },
     }, 50);
   };
 
-  // dispara hooks também no boot
+  // dispara hooks tambm no boot
   setTimeout(() => {
     injectEnergyCard();
     injectPersonsCard();
@@ -3218,5 +3236,10 @@ setTimeout(() => { paintHouseDot(); setConn(state.connected ? "ok" : "warn"); },
     injectBabyTimeline();
   }, 1500);
 
-  console.log("[v3] expansion pack carregado ✓");
+  console.log("[v3] expansion pack carregado ");
 })();
+
+
+
+
+
